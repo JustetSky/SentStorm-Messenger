@@ -1,0 +1,56 @@
+name: sentstorm
+
+services:
+  postgres:
+    image: postgres:17.5
+    container_name: postgres-sentstorm
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: sdbpass
+      POSTGRES_DB: sentstorm_db
+    volumes:
+      - sentstorm_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - sentstorm-network
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.0
+    container_name: keycloak-sentstorm
+    command: ["start-dev"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: kcpass
+    volumes:
+      - sentstorm_keycloak_data:/opt/keycloak/data
+    ports:
+      - "9090:8080"
+    networks:
+      - sentstorm-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-sentstorm
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - sentstorm_pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5051:80"
+    depends_on:
+      - postgres
+    networks:
+      - sentstorm-network
+    restart: unless-stopped
+
+volumes:
+  sentstorm_postgres_data:
+  sentstorm_pgadmin_data:
+  sentstorm_keycloak_data:
+
+networks:
+  sentstorm-network:
+    driver: bridge
