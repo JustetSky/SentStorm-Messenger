@@ -1,0 +1,30 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# VS Code
+.vscode/
+.history/
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+.tmp/
+.cache/
+
+# Gradle
+.gradle/
+build/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
