@@ -1,7 +1,5 @@
 package com.sentstorm.messenger.core.entity;
 
-import com.sentstorm.messenger.core.entity.base.BaseAuditingEntity;
-
 import jakarta.persistence.*;
 
 import lombok.*;
@@ -16,13 +14,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserDevice extends BaseAuditingEntity {
+public class UserDevice {
 
     @Id
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "device_id", nullable = false)
@@ -30,6 +28,9 @@ public class UserDevice extends BaseAuditingEntity {
 
     @Column(name = "public_key", columnDefinition = "TEXT")
     private String publicKey;
+
+    @Column(name = "created_date")
+    private Instant createdDate;
 
     @Column(name = "last_active")
     private Instant lastActive;

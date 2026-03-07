@@ -23,15 +23,18 @@ public class Message extends BaseAuditingEntity {
     @Id
     private UUID id;
 
+    @Column(name = "client_message_id", nullable = false, unique = true)
+    private UUID clientMessageId;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chat_id")
+    @JoinColumn(name = "chat_id", nullable = false)
     private Chat chat;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id")
+    @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String ciphertext;
 
     @Enumerated(EnumType.STRING)
@@ -40,6 +43,11 @@ public class Message extends BaseAuditingEntity {
     @Enumerated(EnumType.STRING)
     private MessageState state;
 
-    @OneToMany(mappedBy = "message", fetch = FetchType.LAZY)
+    @OneToMany(
+            mappedBy = "message",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     private List<MessageAttachment> attachments;
 }
