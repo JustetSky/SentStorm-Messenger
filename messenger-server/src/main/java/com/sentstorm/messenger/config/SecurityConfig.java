@@ -1,11 +1,14 @@
 package com.sentstorm.messenger.config;
 
+import com.sentstorm.messenger.security.filter.UserSynchronizerFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -17,7 +20,10 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final UserSynchronizerFilter userSynchronizerFilter; 
     
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -36,7 +42,12 @@ public class SecurityConfig {
                 )
                 .oauth2ResourceServer(auth ->
                         auth.jwt(token ->
-                                token.jwtAuthenticationConverter(new KeycloakJwtAuthenticationConverter())));
+                                token.jwtAuthenticationConverter(new KeycloakJwtAuthenticationConverter())))
+                .addFilterAfter(
+                        userSynchronizerFilter,
+                        BearerTokenAuthenticationFilter.class
+                );
+        
         
         return http.build();
     }
