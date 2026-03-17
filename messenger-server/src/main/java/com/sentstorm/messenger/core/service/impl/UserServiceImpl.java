@@ -1,6 +1,7 @@
 package com.sentstorm.messenger.core.service.impl;
 
 import com.sentstorm.messenger.core.entity.User;
+import com.sentstorm.messenger.core.repository.UserRepository;
 import com.sentstorm.messenger.core.service.CurrentUserService;
 import com.sentstorm.messenger.core.service.UserService;
 
@@ -13,10 +14,19 @@ import org.springframework.stereotype.Service;
 public class UserServiceImpl implements UserService {
 
     private final CurrentUserService currentUserService;
+    private final UserRepository userRepository;
 
     @Override
     public User getCurrentUser() {
         return currentUserService.getCurrentUser();
+    }
+
+    @Override
+    public User getUserByPublicId(String publicId) {
+
+        return userRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
     }
 
 }

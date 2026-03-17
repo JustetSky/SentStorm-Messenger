@@ -31,4 +31,13 @@ public class UserController {
         return userMapper.toDto(user);
     }
 
+    @GetMapping(ApiPath.PUBLIC_ID)
+    @Operation(summary = "Get public information about a user")
+    public UserDto getUserByPublicId(@PathVariable String publicId) {
+
+        User user = userService.getUserByPublicId(publicId);
+
+        return userMapper.toDto(user);
+    }
+
 }

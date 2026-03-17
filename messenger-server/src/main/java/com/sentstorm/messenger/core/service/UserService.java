@@ -6,4 +6,6 @@ public interface UserService {
 
     User getCurrentUser();
 
+    User getUserByPublicId(String publicId);
+
 }
