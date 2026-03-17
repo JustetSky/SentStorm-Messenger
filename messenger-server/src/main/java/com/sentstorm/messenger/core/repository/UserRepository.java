@@ -1,5 +1,6 @@
 package com.sentstorm.messenger.core.repository;
 
+import com.sentstorm.messenger.api.dto.UserSearchProjection;
 import com.sentstorm.messenger.core.entity.User;
 
 import org.springframework.data.domain.Page;
@@ -19,10 +20,13 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByPublicId(String publicId);
 
     @Query("""
-        SELECT u
-        FROM User u
-        WHERE LOWER(u.publicId) LIKE LOWER(CONCAT('%', :query, '%'))
-    """)
-    Page<User> searchUsers(String query, Pageable pageable);
+    SELECT u.publicId AS publicId,
+           u.firstName AS firstName,
+           u.lastName AS lastName,
+           u.lastSeen AS lastSeen
+    FROM User u
+    WHERE LOWER(u.publicId) LIKE LOWER(CONCAT('%', :query, '%'))
+""")
+    Page<UserSearchProjection> searchUsers(String query, Pageable pageable);
 
 }

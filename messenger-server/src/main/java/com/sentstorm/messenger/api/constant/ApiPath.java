@@ -9,5 +9,6 @@ public class ApiPath {
     public static final String USERS = "/users";
     public static final String CURRENT_USER = "/me";
     public static final String PUBLIC_ID = "/{publicId}";
+    public static final String SEARCH = "/search";
 
 }

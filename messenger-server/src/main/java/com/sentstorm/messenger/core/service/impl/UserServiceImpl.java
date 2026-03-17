@@ -1,5 +1,6 @@
 package com.sentstorm.messenger.core.service.impl;
 
+import com.sentstorm.messenger.api.dto.UserSearchProjection;
 import com.sentstorm.messenger.core.entity.User;
 import com.sentstorm.messenger.core.repository.UserRepository;
 import com.sentstorm.messenger.core.service.CurrentUserService;
@@ -7,6 +8,8 @@ import com.sentstorm.messenger.core.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,6 +30,11 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+    }
+
+    @Override
+    public Page<UserSearchProjection> searchUsers(String query, Pageable pageable) {
+        return userRepository.searchUsers(query, pageable);
     }
 
 }
