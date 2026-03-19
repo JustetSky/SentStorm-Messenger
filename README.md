@@ -200,17 +200,19 @@ GET /users/search          # Поиск пользователей по publicId
 
 ### Chats
 ```
-GET  /chats                 # Получить список чатов текущего пользователя
-POST /chats                 # Создать новый личный чат с пользователем
-GET  /chats/{chatId}        # Получить информацию о конкретном чате
+GET    /chats                 # Получить список чатов текущего пользователя
+POST   /chats                 # Создать новый личный чат с пользователем
+GET    /chats/{chatId}        # Получить информацию о конкретном чате
+DELETE /chats/{chatId}        # Удаление чата
 ```
 
 ### Messages
 ```
-POST  /messages                          # Отправить зашифрованное сообщение в чат
-GET   /messages/chat/{chatId}            # Получить историю сообщений выбранного чата
-PATCH /messages/{messageId}/read         # Отметить сообщение как прочитанное (две синие галочки)
-PATCH /messages/{messageId}/delivered    # Отметить сообщение как доставленное (две серые галочки)
+POST   /messages                          # Отправить зашифрованное сообщение в чат
+GET    /chats/{chatId}/messages            # Получить историю сообщений выбранного чата
+PATCH  /messages/{messageId}/read         # Отметить сообщение как прочитанное (две синие галочки)
+PATCH  /messages/{messageId}/delivered    # Отметить сообщение как доставленное (две серые галочки)
+DELETE /messages/{messageId}              # Удаление сообщения
 ```
 
 ### Attachment
@@ -227,7 +229,7 @@ DELETE /devices/{deviceId}   # Удалить устройство пользо�
 
 ### Crypto
 ```
-GET /users/{userId}/devices   # Получить список устройств пользователя и их публичные ключи для E2E шифрования
+GET /users/{publicId}/devices   # Получить список устройств пользователя и их публичные ключи для E2E шифрования
 ```
 
 ---
