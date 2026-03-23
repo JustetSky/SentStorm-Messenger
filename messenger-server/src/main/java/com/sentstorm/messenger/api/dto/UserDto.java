@@ -13,16 +13,16 @@ import java.time.Instant;
 @Schema(description = "User profile response")
 public class UserDto {
 
-    @Schema(description = "Public user identifier", example = "john_doe")
+    @Schema(description = "Public user identifier", example = "dayman")
     private String publicId;
 
-    @Schema(description = "User email", example = "john@example.com")
+    @Schema(description = "User email", example = "dayman@test.com")
     private String email;
 
-    @Schema(description = "User first name", example = "John")
+    @Schema(description = "User first name", example = "Charlie")
     private String firstName;
 
-    @Schema(description = "User last name", example = "Doe")
+    @Schema(description = "User last name", example = "Dayman")
     private String lastName;
 
     @Schema(description = "Last time user was seen online")
