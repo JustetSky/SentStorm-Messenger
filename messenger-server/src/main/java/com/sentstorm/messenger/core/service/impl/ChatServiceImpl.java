@@ -1,6 +1,7 @@
 package com.sentstorm.messenger.core.service.impl;
 
 import com.sentstorm.messenger.api.dto.ChatDto;
+import com.sentstorm.messenger.api.dto.ChatListItemDto;
 import com.sentstorm.messenger.api.dto.CreateChatRequest;
 import com.sentstorm.messenger.core.entity.Chat;
 import com.sentstorm.messenger.core.entity.ChatParticipant;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -48,6 +50,23 @@ public class ChatServiceImpl implements ChatService {
                         .build()
                 )
                 .orElseGet(() -> createNewChat(currentUser, otherUser));
+    }
+
+    @Override
+    public List<ChatListItemDto> getUserChats() {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        return chatRepository.findUserChatList(currentUser.getId())
+                .stream()
+                .map(p -> ChatListItemDto.builder()
+                        .chatId(p.getChatId())
+                        .lastMessageId(p.getLastMessageId())
+                        .lastMessageCiphertext(p.getLastMessageCiphertext())
+                        .lastMessageTime(p.getLastMessageTime())
+                        .build()
+                )
+                .toList();
     }
 
     private ChatDto createNewChat(User user1, User user2) {

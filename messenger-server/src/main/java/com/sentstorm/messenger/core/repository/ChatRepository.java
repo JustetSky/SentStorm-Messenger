@@ -22,14 +22,15 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
             m.createdDate as lastMessageTime
         FROM Chat c
         JOIN ChatParticipant cp ON cp.chat.id = c.id
-        LEFT JOIN Message m ON m.chat.id = c.id
-        WHERE cp.user.id = :userId
-        AND m.createdDate = (
-            SELECT MAX(m2.createdDate)
+        LEFT JOIN Message m ON m.id = (
+            SELECT m2.id
             FROM Message m2
             WHERE m2.chat.id = c.id
+            ORDER BY m2.createdDate DESC
+            LIMIT 1
         )
-        ORDER BY m.createdDate DESC
+        WHERE cp.user.id = :userId
+        ORDER BY m.createdDate DESC NULLS LAST
     """)
     List<ChatListItemProjection> findUserChatList(UUID userId);
 

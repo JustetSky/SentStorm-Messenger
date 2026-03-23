@@ -2,6 +2,7 @@ package com.sentstorm.messenger.api.controller;
 
 import com.sentstorm.messenger.api.constant.ApiPath;
 import com.sentstorm.messenger.api.dto.ChatDto;
+import com.sentstorm.messenger.api.dto.ChatListItemDto;
 import com.sentstorm.messenger.api.dto.CreateChatRequest;
 import com.sentstorm.messenger.core.service.ChatService;
 
@@ -13,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(ApiPath.CHATS)
@@ -28,5 +31,12 @@ public class ChatController {
             @Valid @RequestBody CreateChatRequest request
     ) {
         return ResponseEntity.ok(chatService.createPrivateChat(request));
+    }
+
+    @GetMapping
+    @Operation(summary = "Get current user's chats")
+    public ResponseEntity<List<ChatListItemDto>> getChats() {
+
+        return ResponseEntity.ok(chatService.getUserChats());
     }
 }
