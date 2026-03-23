@@ -13,6 +13,6 @@ import lombok.*;
 public class CreateChatRequest {
 
     @NotBlank
-    @Schema(description = "Public ID of another user", example = "nightman")
+    @Schema(description = "Public ID of another user", example = "dayman")
     private String userPublicId;
 }
