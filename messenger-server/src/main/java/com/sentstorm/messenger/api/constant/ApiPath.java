@@ -11,5 +11,7 @@ public class ApiPath {
     public static final String PUBLIC_ID = "/{publicId}";
     public static final String SEARCH = "/search";
     public static final String CHATS = "/chats";
+    public static final String CHAT_ID = "/{chatId}";
+    public static final String MESSAGES = "/messages";
 
 }
