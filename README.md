@@ -209,7 +209,7 @@ DELETE /chats/{chatId}        # Удаление чата
 ### Messages
 ```
 POST   /messages                          # Отправить зашифрованное сообщение в чат
-GET    /chats/{chatId}/messages            # Получить историю сообщений выбранного чата
+GET    /chats/{chatId}/messages           # Получить историю сообщений выбранного чата
 PATCH  /messages/{messageId}/read         # Отметить сообщение как прочитанное (две синие галочки)
 PATCH  /messages/{messageId}/delivered    # Отметить сообщение как доставленное (две серые галочки)
 DELETE /messages/{messageId}              # Удаление сообщения
