@@ -14,9 +14,13 @@ public class MessageDto {
 
     private UUID id;
 
+    private UUID clientMessageId; 
+
     private UUID senderId;
 
     private String ciphertext;
+
+    private String type; 
 
     private String state;
 
