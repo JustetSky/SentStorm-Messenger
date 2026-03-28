@@ -1,7 +1,7 @@
 package com.sentstorm.messenger.core.service;
 
-import com.sentstorm.messenger.api.dto.MessageDto;
-import com.sentstorm.messenger.api.dto.MessageSendRequest;
+import com.sentstorm.messenger.api.dto.message.MessageDto;
+import com.sentstorm.messenger.api.dto.message.MessageSendRequest;
 import com.sentstorm.messenger.api.dto.PageResponse;
 
 import org.springframework.data.domain.Pageable;
@@ -14,4 +14,7 @@ public interface MessageService {
 
     MessageDto sendMessage(MessageSendRequest request);
 
+    void markAsDelivered(UUID messageId);
+
+    void markAsRead(UUID messageId);
 }

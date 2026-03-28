@@ -13,5 +13,8 @@ public class ApiPath {
     public static final String CHATS = "/chats";
     public static final String CHAT_ID = "/{chatId}";
     public static final String MESSAGES = "/messages";
+    public static final String MESSAGE_ID = "/{messageId}";
+    public static final String DELIVERED = "/delivered";
+    public static final String READ = "/read";
 
 }
