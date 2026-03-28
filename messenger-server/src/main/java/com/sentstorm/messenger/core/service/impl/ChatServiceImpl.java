@@ -1,15 +1,15 @@
 package com.sentstorm.messenger.core.service.impl;
 
-import com.sentstorm.messenger.api.dto.ChatDto;
-import com.sentstorm.messenger.api.dto.ChatListItemDto;
-import com.sentstorm.messenger.api.dto.CreateChatRequest;
-import com.sentstorm.messenger.core.entity.Chat;
-import com.sentstorm.messenger.core.entity.ChatParticipant;
-import com.sentstorm.messenger.core.entity.ChatParticipantId;
-import com.sentstorm.messenger.core.entity.User;
-import com.sentstorm.messenger.core.repository.ChatParticipantRepository;
-import com.sentstorm.messenger.core.repository.ChatRepository;
-import com.sentstorm.messenger.core.repository.UserRepository;
+import com.sentstorm.messenger.api.dto.chat.ChatDto;
+import com.sentstorm.messenger.api.dto.chat.ChatListItemDto;
+import com.sentstorm.messenger.api.dto.chat.CreateChatRequest;
+import com.sentstorm.messenger.core.entity.chat.Chat;
+import com.sentstorm.messenger.core.entity.chat.ChatParticipant;
+import com.sentstorm.messenger.core.entity.chat.ChatParticipantId;
+import com.sentstorm.messenger.core.entity.user.User;
+import com.sentstorm.messenger.core.repository.chat.ChatParticipantRepository;
+import com.sentstorm.messenger.core.repository.chat.ChatRepository;
+import com.sentstorm.messenger.core.repository.user.UserRepository;
 import com.sentstorm.messenger.core.service.ChatService;
 import com.sentstorm.messenger.core.service.CurrentUserService;
 

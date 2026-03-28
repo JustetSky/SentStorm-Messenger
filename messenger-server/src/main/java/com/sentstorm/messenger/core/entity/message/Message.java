@@ -1,6 +1,8 @@
-package com.sentstorm.messenger.core.entity;
+package com.sentstorm.messenger.core.entity.message;
 
+import com.sentstorm.messenger.core.entity.user.User;
 import com.sentstorm.messenger.core.entity.base.BaseAuditingEntity;
+import com.sentstorm.messenger.core.entity.chat.Chat;
 import com.sentstorm.messenger.core.entity.enums.MessageState;
 import com.sentstorm.messenger.core.entity.enums.MessageType;
 

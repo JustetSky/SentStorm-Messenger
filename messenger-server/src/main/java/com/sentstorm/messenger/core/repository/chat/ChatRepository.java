@@ -1,7 +1,7 @@
-package com.sentstorm.messenger.core.repository;
+package com.sentstorm.messenger.core.repository.chat;
 
-import com.sentstorm.messenger.api.dto.ChatListItemProjection;
-import com.sentstorm.messenger.core.entity.Chat;
+import com.sentstorm.messenger.api.dto.chat.ChatListItemProjection;
+import com.sentstorm.messenger.core.entity.chat.Chat;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

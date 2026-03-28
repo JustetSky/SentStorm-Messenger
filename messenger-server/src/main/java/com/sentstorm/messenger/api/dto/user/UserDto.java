@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.api.dto;
+package com.sentstorm.messenger.api.dto.user;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;

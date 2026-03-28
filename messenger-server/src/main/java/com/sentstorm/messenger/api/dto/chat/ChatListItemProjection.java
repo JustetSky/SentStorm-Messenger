@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.api.dto;
+package com.sentstorm.messenger.api.dto.chat;
 
 import java.time.Instant;
 import java.util.UUID;

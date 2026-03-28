@@ -1,7 +1,7 @@
 package com.sentstorm.messenger.core.service;
 
-import com.sentstorm.messenger.core.entity.User;
-import com.sentstorm.messenger.core.repository.UserRepository;
+import com.sentstorm.messenger.core.entity.user.User;
+import com.sentstorm.messenger.core.repository.user.UserRepository;
 import com.sentstorm.messenger.security.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

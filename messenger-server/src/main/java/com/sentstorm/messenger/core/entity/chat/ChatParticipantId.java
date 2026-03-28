@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.core.entity;
+package com.sentstorm.messenger.core.entity.chat;
 
 import jakarta.persistence.Embeddable;
 

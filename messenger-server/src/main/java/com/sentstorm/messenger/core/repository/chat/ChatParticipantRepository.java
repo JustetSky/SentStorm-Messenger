@@ -1,7 +1,7 @@
-package com.sentstorm.messenger.core.repository;
+package com.sentstorm.messenger.core.repository.chat;
 
-import com.sentstorm.messenger.core.entity.ChatParticipant;
-import com.sentstorm.messenger.core.entity.ChatParticipantId;
+import com.sentstorm.messenger.core.entity.chat.ChatParticipant;
+import com.sentstorm.messenger.core.entity.chat.ChatParticipantId;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

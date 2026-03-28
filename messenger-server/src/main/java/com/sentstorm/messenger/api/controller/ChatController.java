@@ -1,9 +1,9 @@
 package com.sentstorm.messenger.api.controller;
 
 import com.sentstorm.messenger.api.constant.ApiPath;
-import com.sentstorm.messenger.api.dto.ChatDto;
-import com.sentstorm.messenger.api.dto.ChatListItemDto;
-import com.sentstorm.messenger.api.dto.CreateChatRequest;
+import com.sentstorm.messenger.api.dto.chat.ChatDto;
+import com.sentstorm.messenger.api.dto.chat.ChatListItemDto;
+import com.sentstorm.messenger.api.dto.chat.CreateChatRequest;
 import com.sentstorm.messenger.core.service.ChatService;
 
 import io.swagger.v3.oas.annotations.Operation;

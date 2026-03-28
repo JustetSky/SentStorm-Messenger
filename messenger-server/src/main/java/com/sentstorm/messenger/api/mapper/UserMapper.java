@@ -1,32 +1,15 @@
 package com.sentstorm.messenger.api.mapper;
 
-import com.sentstorm.messenger.api.dto.UserDto;
-import com.sentstorm.messenger.api.dto.UserSearchDto;
-import com.sentstorm.messenger.api.dto.UserSearchProjection;
-import com.sentstorm.messenger.core.entity.User;
-import org.springframework.stereotype.Component;
+import com.sentstorm.messenger.api.dto.user.UserDto;
+import com.sentstorm.messenger.api.dto.user.UserSearchDto;
+import com.sentstorm.messenger.api.dto.user.UserSearchProjection;
+import com.sentstorm.messenger.core.entity.user.User;
+import org.mapstruct.Mapper;
 
-@Component
-public class UserMapper {
+@Mapper(componentModel = "spring")
+public interface UserMapper {
 
-    public UserDto toDto(User user) {
+    UserDto toDto(User user);
 
-        return UserDto.builder()
-                .publicId(user.getPublicId())
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .lastSeen(user.getLastSeen())
-                .build();
-    }
-
-    public UserSearchDto toSearchDto(UserSearchProjection p) {
-        return UserSearchDto.builder()
-                .publicId(p.getPublicId())
-                .firstName(p.getFirstName())
-                .lastName(p.getLastName())
-                .lastSeen(p.getLastSeen())
-                .build();
-    }
-
+    UserSearchDto toSearchDto(UserSearchProjection projection);
 }

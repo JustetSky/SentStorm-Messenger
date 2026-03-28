@@ -1,6 +1,6 @@
-package com.sentstorm.messenger.core.repository;
+package com.sentstorm.messenger.core.repository.message;
 
-import com.sentstorm.messenger.core.entity.MessageAttachment;
+import com.sentstorm.messenger.core.entity.message.MessageAttachment;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

@@ -1,5 +1,6 @@
-package com.sentstorm.messenger.core.entity;
+package com.sentstorm.messenger.core.entity.chat;
 
+import com.sentstorm.messenger.core.entity.message.Message;
 import com.sentstorm.messenger.core.entity.base.BaseAuditingEntity;
 
 import jakarta.persistence.*;

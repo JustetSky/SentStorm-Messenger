@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.api.dto;
+package com.sentstorm.messenger.api.dto.message;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

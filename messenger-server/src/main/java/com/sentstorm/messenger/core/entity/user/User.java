@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.core.entity;
+package com.sentstorm.messenger.core.entity.user;
 
 import com.sentstorm.messenger.core.entity.base.BaseAuditingEntity;
 

@@ -1,6 +1,6 @@
-package com.sentstorm.messenger.core.repository;
+package com.sentstorm.messenger.core.repository.message;
 
-import com.sentstorm.messenger.core.entity.Message;
+import com.sentstorm.messenger.core.entity.message.Message;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

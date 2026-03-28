@@ -2,11 +2,11 @@ package com.sentstorm.messenger.api.controller;
 
 import com.sentstorm.messenger.api.constant.ApiPath;
 import com.sentstorm.messenger.api.dto.PageResponse;
-import com.sentstorm.messenger.api.dto.UserDto;
-import com.sentstorm.messenger.api.dto.UserSearchDto;
-import com.sentstorm.messenger.api.dto.UserSearchProjection;
+import com.sentstorm.messenger.api.dto.user.UserDto;
+import com.sentstorm.messenger.api.dto.user.UserSearchDto;
+import com.sentstorm.messenger.api.dto.user.UserSearchProjection;
 import com.sentstorm.messenger.api.mapper.UserMapper;
-import com.sentstorm.messenger.core.entity.User;
+import com.sentstorm.messenger.core.entity.user.User;
 import com.sentstorm.messenger.core.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;

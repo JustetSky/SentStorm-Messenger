@@ -1,6 +1,6 @@
-package com.sentstorm.messenger.core.repository;
+package com.sentstorm.messenger.core.repository.user;
 
-import com.sentstorm.messenger.core.entity.UserDevice;
+import com.sentstorm.messenger.core.entity.user.UserDevice;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
