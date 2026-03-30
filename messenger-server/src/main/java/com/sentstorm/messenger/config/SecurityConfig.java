@@ -23,8 +23,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final UserSynchronizerFilter userSynchronizerFilter; 
-    
+    private final UserSynchronizerFilter userSynchronizerFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -47,8 +47,8 @@ public class SecurityConfig {
                         userSynchronizerFilter,
                         BearerTokenAuthenticationFilter.class
                 );
-        
-        
+
+
         return http.build();
     }
 

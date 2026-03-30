@@ -27,12 +27,23 @@ public class UserSynchronizerFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
+        String uri = request.getRequestURI();
+
+        if (uri.startsWith("/v3/api-docs") ||
+                uri.startsWith("/swagger-ui")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         var authentication = SecurityContextHolder
                 .getContext()
                 .getAuthentication();
 
         if (authentication instanceof JwtAuthenticationToken jwtToken) {
-            userSynchronizer.synchronize(jwtToken.getToken());
+            try {
+                userSynchronizer.synchronize(jwtToken.getToken());
+            } catch (Exception ignored) {
+            }
         }
 
         filterChain.doFilter(request, response);

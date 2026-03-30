@@ -17,7 +17,17 @@ public class UserSynchronizer {
 
     public void synchronize(Jwt token) {
 
-        UUID keycloakId = UUID.fromString(token.getSubject());
+        if (token.getSubject() == null) {
+            return;
+        }
+
+        UUID keycloakId;
+
+        try {
+            keycloakId = UUID.fromString(token.getSubject());
+        } catch (Exception e) {
+            return;
+        }
 
         var userOptional = userRepository.findByKeycloakId(keycloakId);
 
@@ -36,7 +46,6 @@ public class UserSynchronizer {
         user.setEmail(token.getClaim("email"));
         user.setFirstName(token.getClaim("given_name"));
         user.setLastName(token.getClaim("family_name"));
-
         user.setPublicId(token.getClaim("preferred_username"));
 
         user.setLastSeen(Instant.now());
