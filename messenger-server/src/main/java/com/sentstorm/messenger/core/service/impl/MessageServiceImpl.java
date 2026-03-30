@@ -154,4 +154,40 @@ public class MessageServiceImpl implements MessageService {
             message.setState(MessageState.READ);
         }
     }
+
+    @Override
+    @Transactional
+    public void deleteMessage(UUID messageId) {
+
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new ServiceException(
+                        ErrorCode.NOT_FOUND,
+                        "Message not found"
+                ));
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        boolean isParticipant = chatParticipantRepository
+                .existsByChatIdAndUserId(
+                        message.getChat().getId(),
+                        currentUser.getId()
+                );
+
+        if (!isParticipant) {
+            throw new ServiceException(
+                    ErrorCode.FORBIDDEN,
+                    "Access denied"
+            );
+        }
+
+        if (!message.getSender().getId().equals(currentUser.getId())) {
+            throw new ServiceException(
+                    ErrorCode.FORBIDDEN,
+                    "You can delete only your messages"
+            );
+        }
+
+        messageRepository.delete(message);
+    }
+    
 }

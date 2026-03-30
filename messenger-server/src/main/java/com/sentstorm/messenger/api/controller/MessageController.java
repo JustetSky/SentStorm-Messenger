@@ -61,4 +61,13 @@ public class MessageController {
         messageService.markAsRead(messageId);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping(ApiPath.MESSAGES + ApiPath.MESSAGE_ID)
+    @Operation(summary = "Delete message")
+    public ResponseEntity<Void> deleteMessage(
+            @PathVariable UUID messageId
+    ) {
+        messageService.deleteMessage(messageId);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -17,4 +17,6 @@ public interface MessageService {
     void markAsDelivered(UUID messageId);
 
     void markAsRead(UUID messageId);
+    
+    void deleteMessage(UUID messageId);
 }
