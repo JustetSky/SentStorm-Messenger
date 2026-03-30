@@ -12,6 +12,8 @@ import com.sentstorm.messenger.core.repository.chat.ChatRepository;
 import com.sentstorm.messenger.core.repository.user.UserRepository;
 import com.sentstorm.messenger.core.service.ChatService;
 import com.sentstorm.messenger.core.service.CurrentUserService;
+import com.sentstorm.messenger.core.exception.ErrorCode;
+import com.sentstorm.messenger.core.exception.ServiceException;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -67,6 +69,28 @@ public class ChatServiceImpl implements ChatService {
                         .build()
                 )
                 .toList();
+    }
+
+    @Override
+    public ChatDto getChat(UUID chatId) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        boolean isParticipant = chatParticipantRepository
+                .existsByChatIdAndUserId(chatId, currentUser.getId());
+
+        if (!isParticipant) {
+            throw new ServiceException(ErrorCode.FORBIDDEN, "Access denied");
+        }
+
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() ->
+                        new ServiceException(ErrorCode.NOT_FOUND, "Chat not found")
+                );
+
+        return ChatDto.builder()
+                .id(chat.getId())
+                .build();
     }
 
     private ChatDto createNewChat(User user1, User user2) {

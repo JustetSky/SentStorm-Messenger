@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(ApiPath.CHATS)
@@ -38,5 +39,13 @@ public class ChatController {
     public ResponseEntity<List<ChatListItemDto>> getChats() {
 
         return ResponseEntity.ok(chatService.getUserChats());
+    }
+
+    @GetMapping(ApiPath.CHAT_ID)
+    @Operation(summary = "Get chat by id")
+    public ResponseEntity<ChatDto> getChat(
+            @PathVariable UUID chatId
+    ) {
+        return ResponseEntity.ok(chatService.getChat(chatId));
     }
 }
