@@ -14,5 +14,7 @@ public interface ChatService {
     List<ChatListItemDto> getUserChats();
 
     ChatDto getChat(UUID chatId);
+    
+    void deleteChat(UUID chatId);
 
 }

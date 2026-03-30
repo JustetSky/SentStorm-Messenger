@@ -22,9 +22,17 @@ public class Chat extends BaseAuditingEntity {
     @Id
     private UUID id;
 
-    @OneToMany(mappedBy = "chat", fetch = FetchType.LAZY)
+    @OneToMany(
+            mappedBy = "chat",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     private List<Message> messages;
 
-    @OneToMany(mappedBy = "chat", fetch = FetchType.LAZY)
+    @OneToMany(
+            mappedBy = "chat",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     private List<ChatParticipant> participants;
 }

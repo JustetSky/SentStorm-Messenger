@@ -11,6 +11,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ServiceException.class)
     public ResponseEntity<ErrorMessage> handleServiceException(ServiceException ex) {
 
+        
+        
         return ResponseEntity
                 .status(ex.getErrorCode().getHttpStatus())
                 .body(new ErrorMessage(
@@ -37,7 +39,7 @@ public class GlobalExceptionHandler {
                 .status(ErrorCode.INTERNAL_ERROR.getHttpStatus())
                 .body(new ErrorMessage(
                         ErrorCode.INTERNAL_ERROR,
-                        "Something went wrong"
+                        ex.getMessage()
                 ));
     }
 }

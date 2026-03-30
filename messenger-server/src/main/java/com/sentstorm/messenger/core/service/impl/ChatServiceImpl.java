@@ -93,6 +93,33 @@ public class ChatServiceImpl implements ChatService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public void deleteChat(UUID chatId) {
+
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new ServiceException(
+                        ErrorCode.NOT_FOUND,
+                        "Chat not found"
+                ));
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        boolean isParticipant = chatParticipantRepository
+                .existsByChatIdAndUserId(chatId, currentUser.getId());
+
+        if (!isParticipant) {
+            throw new ServiceException(
+                    ErrorCode.FORBIDDEN,
+                    "Access denied"
+            );
+        }
+
+        chatParticipantRepository.deleteByChatId(chatId);
+
+        chatRepository.delete(chat);
+    }
+
     private ChatDto createNewChat(User user1, User user2) {
 
         Chat chat = new Chat();

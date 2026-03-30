@@ -16,5 +16,7 @@ public interface ChatParticipantRepository
     List<ChatParticipant> findByChatId(UUID chatId);
 
     boolean existsByChatIdAndUserId(UUID chatId, UUID userId);
+    
+    void deleteByChatId(UUID chatId);
 
 }

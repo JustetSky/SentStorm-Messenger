@@ -48,4 +48,13 @@ public class ChatController {
     ) {
         return ResponseEntity.ok(chatService.getChat(chatId));
     }
+
+    @DeleteMapping(ApiPath.CHAT_ID)
+    @Operation(summary = "Delete chat")
+    public ResponseEntity<Void> deleteChat(
+            @PathVariable UUID chatId
+    ) {
+        chatService.deleteChat(chatId);
+        return ResponseEntity.noContent().build();
+    }
 }
