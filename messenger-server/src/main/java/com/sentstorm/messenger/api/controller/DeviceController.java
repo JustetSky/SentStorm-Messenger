@@ -1,0 +1,29 @@
+package com.sentstorm.messenger.api.controller;
+
+import com.sentstorm.messenger.api.constant.ApiPath;
+import com.sentstorm.messenger.api.dto.device.DeviceDto;
+import com.sentstorm.messenger.api.dto.device.DeviceRegisterRequest;
+import com.sentstorm.messenger.core.service.DeviceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping(ApiPath.DEVICES)
+@RequiredArgsConstructor
+@Tag(name = "Devices", description = "Device endpoints")
+public class DeviceController {
+
+    private final DeviceService deviceService;
+
+    @PostMapping
+    @Operation(summary = "Register device")
+    public ResponseEntity<DeviceDto> register(
+            @RequestBody @Valid DeviceRegisterRequest request
+    ) {
+        return ResponseEntity.ok(deviceService.register(request));
+    }
+}

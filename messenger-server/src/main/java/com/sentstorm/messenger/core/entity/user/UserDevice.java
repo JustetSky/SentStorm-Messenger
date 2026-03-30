@@ -26,7 +26,7 @@ public class UserDevice {
     @Column(name = "device_id", nullable = false)
     private String deviceId;
 
-    @Column(name = "public_key", columnDefinition = "TEXT")
+    @Column(name = "public_key", nullable = false, columnDefinition = "TEXT")
     private String publicKey;
 
     @Column(name = "created_date")
@@ -38,6 +38,6 @@ public class UserDevice {
     @Column(name = "push_token")
     private String pushToken;
 
-    @Column(name = "is_active")
+    @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 }
