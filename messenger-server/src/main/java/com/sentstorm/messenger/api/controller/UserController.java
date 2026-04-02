@@ -2,11 +2,13 @@ package com.sentstorm.messenger.api.controller;
 
 import com.sentstorm.messenger.api.constant.ApiPath;
 import com.sentstorm.messenger.api.dto.PageResponse;
+import com.sentstorm.messenger.api.dto.device.UserDevicePublicDto;
 import com.sentstorm.messenger.api.dto.user.UserDto;
 import com.sentstorm.messenger.api.dto.user.UserSearchDto;
 import com.sentstorm.messenger.api.dto.user.UserSearchProjection;
 import com.sentstorm.messenger.api.mapper.UserMapper;
 import com.sentstorm.messenger.core.entity.user.User;
+import com.sentstorm.messenger.core.service.DeviceService;
 import com.sentstorm.messenger.core.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,8 +18,11 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Validated
 @RestController
@@ -28,6 +33,7 @@ public class UserController {
 
     private final UserService userService;
     private final UserMapper userMapper;
+    private final DeviceService deviceService;
 
     @GetMapping(ApiPath.CURRENT_USER)
     @Operation(summary = "Get current authenticated user profile")
@@ -64,6 +70,14 @@ public class UserController {
                 .size(result.getSize())
                 .total(result.getTotalElements())
                 .build();
+    }
+
+    @GetMapping(ApiPath.PUBLIC_ID + ApiPath.DEVICES)
+    @Operation(summary = "Get user devices for E2E encryption")
+    public ResponseEntity<List<UserDevicePublicDto>> getUserDevices(
+            @PathVariable String publicId
+    ) {
+        return ResponseEntity.ok(deviceService.getUserDevices(publicId));
     }
 
 }

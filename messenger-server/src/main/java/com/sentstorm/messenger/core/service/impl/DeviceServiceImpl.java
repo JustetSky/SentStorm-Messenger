@@ -3,18 +3,21 @@ package com.sentstorm.messenger.core.service.impl;
 import com.sentstorm.messenger.api.dto.device.DeviceDto;
 import com.sentstorm.messenger.api.dto.device.DeviceRegisterRequest;
 import com.sentstorm.messenger.api.dto.device.UpdatePushTokenRequest;
+import com.sentstorm.messenger.api.dto.device.UserDevicePublicDto;
 import com.sentstorm.messenger.api.mapper.DeviceMapper;
 import com.sentstorm.messenger.core.entity.user.User;
 import com.sentstorm.messenger.core.entity.user.UserDevice;
 import com.sentstorm.messenger.core.exception.ErrorCode;
 import com.sentstorm.messenger.core.exception.ServiceException;
 import com.sentstorm.messenger.core.repository.device.UserDeviceRepository;
+import com.sentstorm.messenger.core.repository.user.UserRepository;
 import com.sentstorm.messenger.core.service.CurrentUserService;
 import com.sentstorm.messenger.core.service.DeviceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,6 +27,7 @@ public class DeviceServiceImpl implements DeviceService {
     private final UserDeviceRepository deviceRepository;
     private final CurrentUserService currentUserService;
     private final DeviceMapper deviceMapper;
+    private final UserRepository userRepository;
 
     @Override
     public DeviceDto register(DeviceRegisterRequest request) {
@@ -88,6 +92,23 @@ public class DeviceServiceImpl implements DeviceService {
         }
 
         deviceRepository.delete(device);
+    }
+
+    @Override
+    public List<UserDevicePublicDto> getUserDevices(String publicId) {
+
+        User user = userRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new ServiceException(
+                        ErrorCode.NOT_FOUND,
+                        "User not found"
+                ));
+
+        List<UserDevice> devices = deviceRepository
+                .findByUserIdAndIsActiveTrue(user.getId());
+
+        return devices.stream()
+                .map(deviceMapper::toPublicDto)
+                .toList();
     }
     
 }
