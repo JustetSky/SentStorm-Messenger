@@ -1,9 +1,9 @@
 package com.sentstorm.messenger.api.controller;
 
 import com.sentstorm.messenger.api.constant.ApiPath;
-import com.sentstorm.messenger.api.dto.device.DeviceDto;
-import com.sentstorm.messenger.api.dto.device.DeviceRegisterRequest;
-import com.sentstorm.messenger.api.dto.device.UpdatePushTokenRequest;
+import com.sentstorm.messenger.api.model.device.DeviceDto;
+import com.sentstorm.messenger.api.model.device.DeviceRegisterRequest;
+import com.sentstorm.messenger.api.model.device.UpdatePushTokenRequest;
 import com.sentstorm.messenger.core.service.DeviceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

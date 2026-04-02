@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.api.dto.device;
+package com.sentstorm.messenger.api.model.device;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

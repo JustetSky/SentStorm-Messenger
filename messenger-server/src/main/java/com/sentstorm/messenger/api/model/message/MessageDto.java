@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.api.dto.message;
+package com.sentstorm.messenger.api.model.message;
 
 import lombok.*;
 

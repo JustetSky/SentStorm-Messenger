@@ -1,8 +1,8 @@
 package com.sentstorm.messenger.core.service;
 
-import com.sentstorm.messenger.api.dto.message.MessageDto;
-import com.sentstorm.messenger.api.dto.message.MessageSendRequest;
-import com.sentstorm.messenger.api.dto.PageResponse;
+import com.sentstorm.messenger.api.model.message.MessageDto;
+import com.sentstorm.messenger.api.model.message.MessageSendRequest;
+import com.sentstorm.messenger.api.model.PageResponse;
 
 import org.springframework.data.domain.Pageable;
 

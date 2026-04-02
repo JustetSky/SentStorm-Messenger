@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.api.dto.user;
+package com.sentstorm.messenger.api.model.user;
 
 import java.time.Instant;
 

@@ -1,6 +1,6 @@
 package com.sentstorm.messenger.api.mapper;
 
-import com.sentstorm.messenger.api.dto.message.MessageDto;
+import com.sentstorm.messenger.api.model.message.MessageDto;
 import com.sentstorm.messenger.core.entity.message.Message;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

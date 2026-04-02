@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.api.dto.chat;
+package com.sentstorm.messenger.api.model.chat;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

@@ -1,8 +1,8 @@
 package com.sentstorm.messenger.core.service;
 
-import com.sentstorm.messenger.api.dto.chat.ChatDto;
-import com.sentstorm.messenger.api.dto.chat.ChatListItemDto;
-import com.sentstorm.messenger.api.dto.chat.CreateChatRequest;
+import com.sentstorm.messenger.api.model.chat.ChatDto;
+import com.sentstorm.messenger.api.model.chat.ChatListItemDto;
+import com.sentstorm.messenger.api.model.chat.CreateChatRequest;
 
 import java.util.List;
 import java.util.UUID;

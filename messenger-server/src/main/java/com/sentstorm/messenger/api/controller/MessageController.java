@@ -1,9 +1,9 @@
 package com.sentstorm.messenger.api.controller;
 
 import com.sentstorm.messenger.api.constant.ApiPath;
-import com.sentstorm.messenger.api.dto.message.MessageDto;
-import com.sentstorm.messenger.api.dto.message.MessageSendRequest;
-import com.sentstorm.messenger.api.dto.PageResponse;
+import com.sentstorm.messenger.api.model.message.MessageDto;
+import com.sentstorm.messenger.api.model.message.MessageSendRequest;
+import com.sentstorm.messenger.api.model.PageResponse;
 import com.sentstorm.messenger.core.service.MessageService;
 
 import io.swagger.v3.oas.annotations.Operation;
