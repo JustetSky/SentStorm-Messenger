@@ -2,9 +2,12 @@ package com.sentstorm.messenger.core.service.impl;
 
 import com.sentstorm.messenger.api.dto.device.DeviceDto;
 import com.sentstorm.messenger.api.dto.device.DeviceRegisterRequest;
+import com.sentstorm.messenger.api.dto.device.UpdatePushTokenRequest;
 import com.sentstorm.messenger.api.mapper.DeviceMapper;
 import com.sentstorm.messenger.core.entity.user.User;
 import com.sentstorm.messenger.core.entity.user.UserDevice;
+import com.sentstorm.messenger.core.exception.ErrorCode;
+import com.sentstorm.messenger.core.exception.ServiceException;
 import com.sentstorm.messenger.core.repository.device.UserDeviceRepository;
 import com.sentstorm.messenger.core.service.CurrentUserService;
 import com.sentstorm.messenger.core.service.DeviceService;
@@ -49,4 +52,42 @@ public class DeviceServiceImpl implements DeviceService {
 
         return deviceMapper.toDto(device);
     }
+
+    @Override
+    public void updatePushToken(UpdatePushTokenRequest request) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        UserDevice device = deviceRepository
+                .findByUserIdAndDeviceId(currentUser.getId(), request.getDeviceId())
+                .orElseThrow(() -> new ServiceException(
+                        ErrorCode.NOT_FOUND,
+                        "Device not found"
+                ));
+
+        device.setPushToken(request.getPushToken());
+        device.setLastActive(Instant.now());
+    }
+
+    @Override
+    public void delete(UUID deviceId) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        UserDevice device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new ServiceException(
+                        ErrorCode.NOT_FOUND,
+                        "Device not found"
+                ));
+
+        if (!device.getUser().getId().equals(currentUser.getId())) {
+            throw new ServiceException(
+                    ErrorCode.FORBIDDEN,
+                    "Access denied"
+            );
+        }
+
+        deviceRepository.delete(device);
+    }
+    
 }

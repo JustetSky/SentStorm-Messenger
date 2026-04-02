@@ -17,5 +17,7 @@ public class ApiPath {
     public static final String DELIVERED = "/delivered";
     public static final String READ = "/read";
     public static final String DEVICES = "/devices";
+    public static final String PUSH_TOKEN = "/push-token";
+    public static final String DEVICE_ID = "/{deviceId}";
 
 }
