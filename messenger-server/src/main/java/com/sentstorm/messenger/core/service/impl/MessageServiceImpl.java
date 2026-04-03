@@ -15,6 +15,7 @@ import com.sentstorm.messenger.core.repository.chat.ChatParticipantRepository;
 import com.sentstorm.messenger.core.repository.chat.ChatRepository;
 import com.sentstorm.messenger.core.repository.message.MessageRepository;
 import com.sentstorm.messenger.core.service.CurrentUserService;
+import com.sentstorm.messenger.core.service.MessagePublisher;
 import com.sentstorm.messenger.core.service.MessageService;
 
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class MessageServiceImpl implements MessageService {
     private final CurrentUserService currentUserService;
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
+    private final MessagePublisher messagePublisher;
 
     @Override
     public PageResponse<MessageDto> getChatMessages(UUID chatId, Pageable pageable) {
@@ -95,7 +97,11 @@ public class MessageServiceImpl implements MessageService {
 
         message = messageRepository.save(message);
 
-        return messageMapper.toDto(message);
+        MessageDto dto = messageMapper.toDto(message);
+
+        messagePublisher.sendToChat(chat.getId(), dto);
+        
+        return dto;
     }
 
     @Override
