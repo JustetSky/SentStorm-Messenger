@@ -26,4 +26,12 @@ public interface ChatParticipantRepository
     """)
     List<User> findUsersByChatId(UUID chatId);
 
+    @Query("""
+        SELECT COUNT(cp) > 0
+        FROM ChatParticipant cp
+        WHERE cp.chat.id = :chatId
+          AND cp.user.keycloakId = :keycloakId
+    """)
+    boolean existsByChatIdAndUser_KeycloakId(UUID chatId, UUID keycloakId);
+
 }

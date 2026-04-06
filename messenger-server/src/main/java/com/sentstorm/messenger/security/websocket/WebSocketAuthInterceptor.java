@@ -1,10 +1,10 @@
 package com.sentstorm.messenger.security.websocket;
 
+import com.sentstorm.messenger.core.repository.chat.ChatParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.simp.stomp.StompCommand;
-import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.simp.stomp.*;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -12,12 +12,14 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private final JwtDecoder jwtDecoder;
+    private final ChatParticipantRepository chatParticipantRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -35,16 +37,49 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             String token = authHeaders.get(0).replace("Bearer ", "");
 
             Jwt jwt = jwtDecoder.decode(token);
-
             String userId = jwt.getSubject();
 
-            accessor.setUser(
+            UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(
                             userId,
                             null,
                             List.of()
-                    )
-            );
+                    );
+
+            accessor.setUser(auth);
+
+            accessor.getSessionAttributes().put("user", auth);
+        }
+
+        if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+
+            if (accessor.getUser() == null) {
+                Object sessionUser = accessor.getSessionAttributes().get("user");
+
+                if (sessionUser instanceof UsernamePasswordAuthenticationToken auth) {
+                    accessor.setUser(auth);
+                } else {
+                    throw new RuntimeException("User not authenticated");
+                }
+            }
+
+            String destination = accessor.getDestination();
+
+            if (destination != null && destination.startsWith("/topic/chats/")) {
+
+                String chatIdStr = destination.replace("/topic/chats/", "");
+                UUID chatId = UUID.fromString(chatIdStr);
+
+                String userId = accessor.getUser().getName();
+                UUID keycloakId = UUID.fromString(userId);
+
+                boolean isParticipant = chatParticipantRepository
+                        .existsByChatIdAndUser_KeycloakId(chatId, keycloakId);
+
+                if (!isParticipant) {
+                    throw new RuntimeException("Access denied");
+                }
+            }
         }
 
         return message;
