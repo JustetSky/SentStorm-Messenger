@@ -4,6 +4,7 @@ import com.sentstorm.messenger.api.model.message.MessageDto;
 import com.sentstorm.messenger.api.model.message.MessageSendRequest;
 import com.sentstorm.messenger.api.model.PageResponse;
 import com.sentstorm.messenger.api.mapper.MessageMapper;
+import com.sentstorm.messenger.api.model.message.MessageStatusDto;
 import com.sentstorm.messenger.core.entity.chat.Chat;
 import com.sentstorm.messenger.core.entity.message.Message;
 import com.sentstorm.messenger.core.entity.user.User;
@@ -129,6 +130,11 @@ public class MessageServiceImpl implements MessageService {
 
         if (message.getState() == MessageState.SENT) {
             message.setState(MessageState.DELIVERED);
+
+            messagePublisher.sendStatus(
+                    message.getChat().getId(),
+                    new MessageStatusDto(messageId, "DELIVERED")
+            );
         }
     }
 
@@ -157,7 +163,13 @@ public class MessageServiceImpl implements MessageService {
 
         if (message.getState() == MessageState.SENT
                 || message.getState() == MessageState.DELIVERED) {
+
             message.setState(MessageState.READ);
+
+            messagePublisher.sendStatus(
+                    message.getChat().getId(),
+                    new MessageStatusDto(messageId, "READ")
+            );
         }
     }
 

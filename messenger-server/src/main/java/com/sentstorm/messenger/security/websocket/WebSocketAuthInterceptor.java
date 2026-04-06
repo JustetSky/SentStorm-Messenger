@@ -2,6 +2,7 @@ package com.sentstorm.messenger.security.websocket;
 
 import com.sentstorm.messenger.core.repository.chat.ChatParticipantRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.*;
@@ -12,6 +13,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -22,7 +24,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     private final ChatParticipantRepository chatParticipantRepository;
 
     @Override
-    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+    public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
 
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
@@ -34,7 +36,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 throw new RuntimeException("Missing Authorization header");
             }
 
-            String token = authHeaders.get(0).replace("Bearer ", "");
+            String token = authHeaders.getFirst().replace("Bearer ", "");
 
             Jwt jwt = jwtDecoder.decode(token);
             String userId = jwt.getSubject();
@@ -47,14 +49,13 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                     );
 
             accessor.setUser(auth);
-
-            accessor.getSessionAttributes().put("user", auth);
+            Objects.requireNonNull(accessor.getSessionAttributes()).put("user", auth);
         }
 
         if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
 
             if (accessor.getUser() == null) {
-                Object sessionUser = accessor.getSessionAttributes().get("user");
+                Object sessionUser = Objects.requireNonNull(accessor.getSessionAttributes()).get("user");
 
                 if (sessionUser instanceof UsernamePasswordAuthenticationToken auth) {
                     accessor.setUser(auth);
@@ -67,7 +68,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
             if (destination != null && destination.startsWith("/topic/chats/")) {
 
-                String chatIdStr = destination.replace("/topic/chats/", "");
+                String chatIdStr = destination
+                        .replace("/topic/chats/", "")
+                        .split("/")[0];
+
                 UUID chatId = UUID.fromString(chatIdStr);
 
                 String userId = accessor.getUser().getName();
