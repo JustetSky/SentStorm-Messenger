@@ -1,6 +1,6 @@
 package com.sentstorm.messenger.api.controller;
 
-import com.sentstorm.messenger.api.constant.ApiPath;
+import com.sentstorm.messenger.api.ApiPath;
 import com.sentstorm.messenger.api.model.PageResponse;
 import com.sentstorm.messenger.api.model.device.UserDevicePublicDto;
 import com.sentstorm.messenger.api.model.user.UserDto;

@@ -1,6 +1,6 @@
 package com.sentstorm.messenger.api.controller;
 
-import com.sentstorm.messenger.api.constant.ApiPath;
+import com.sentstorm.messenger.api.ApiPath;
 import com.sentstorm.messenger.api.model.chat.ChatDto;
 import com.sentstorm.messenger.api.model.chat.ChatListItemDto;
 import com.sentstorm.messenger.api.model.chat.CreateChatRequest;

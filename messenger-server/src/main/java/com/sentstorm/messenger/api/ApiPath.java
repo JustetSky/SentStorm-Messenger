@@ -1,4 +1,4 @@
-package com.sentstorm.messenger.api.constant;
+package com.sentstorm.messenger.api;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
