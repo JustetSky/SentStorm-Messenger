@@ -25,37 +25,32 @@ const userStore = useUserStore()
 
 <style scoped>
 .messages {
+  height: 100%;
   flex: 1;
   overflow-y: auto;
-
-  display: flex;
-  justify-content: center;
-
-  padding: 12px 0 12px;
+  min-height: 0;
 }
 
 /* контейнер сообщений */
 .messages-inner {
   width: 100%;
   max-width: 800px;
+  margin: 0 auto;
+  box-sizing: border-box;
 
-  padding: 0 16px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding: 16px 16px 20px;
 }
 
-.messages-inner::before {
-  content: '';
-  height: 10px;
-  flex-shrink: 0;
-}
-
-/* СТРОКА СООБЩЕНИЯ */
+/* Расстояние между сообщениями */
 .message-row {
   display: flex;
   width: 100%;
+  margin-bottom: 8px; /* ← отступ между сообщениями */
+}
+
+/* Последнее сообщение не должно иметь отступ снизу */
+.message-row:last-child {
+  margin-bottom: 0;
 }
 
 /* ЧУЖИЕ — слева с отступом */
@@ -71,15 +66,12 @@ const userStore = useUserStore()
 }
 
 .bubble {
-  max-width: 520px;
-
+  max-width: 60%;
   padding: 10px 14px;
   border-radius: 16px;
-
   background: #e5e7eb;
   font-size: 14px;
   line-height: 1.4;
-
   word-break: break-word;
 }
 

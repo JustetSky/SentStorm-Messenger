@@ -39,9 +39,7 @@ watch(
       </div>
 
       <!-- MESSAGES -->
-      <div class="messages">
-        <MessageList />
-      </div>
+      <MessageList />
 
       <!-- INPUT -->
       <div class="input-wrapper">
@@ -87,22 +85,12 @@ watch(
   flex-shrink: 0;
 }
 
-/* MESSAGES */
-.messages {
-  flex: 1;
-  background: #f7f8fa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow-y: auto;
-  padding-top: 16px;
-}
-
 /* INPUT */
 .input-wrapper {
   display: flex;
   justify-content: center;
-  padding: 12px;
+  padding-top: 12px;
+  padding-bottom: 12px;
   background: white;
   border-top: 1px solid #e6e9ef;
   flex-shrink: 0;
@@ -137,10 +125,6 @@ watch(
 
 .no-chat {
   margin: auto;
-  color: #9ca3af;
-}
-
-.empty {
   color: #9ca3af;
 }
 </style>
