@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -12,6 +13,9 @@ import java.time.Instant;
 @AllArgsConstructor
 @Schema(description = "User profile response")
 public class UserDto {
+
+    @Schema(description = "Internal user ID")
+    private UUID id;
 
     @Schema(description = "Public user identifier", example = "dayman")
     private String publicId;
