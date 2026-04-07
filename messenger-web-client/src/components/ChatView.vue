@@ -1,7 +1,31 @@
 <script setup lang="ts">
 import { useChatStore } from '@/stores/chat'
+import { watch } from 'vue'
+import { useMessageStore } from '@/stores/message'
+import MessageList from '@/components/MessageList.vue'
+import { nextTick } from 'vue'
 
 const chatStore = useChatStore()
+const messageStore = useMessageStore()
+
+watch(
+  () => chatStore.activeChatId,
+  async (chatId) => {
+    if (!chatId) return
+
+    messageStore.clear()
+    await messageStore.fetchMessages(chatId)
+
+    await nextTick()
+
+    const el = document.querySelector('.messages')
+    if (el) {
+      el.scrollTop = el.scrollHeight
+    }
+  },
+  { immediate: true }
+)
+
 </script>
 
 <template>
@@ -16,7 +40,7 @@ const chatStore = useChatStore()
 
       <!-- MESSAGES -->
       <div class="messages">
-        <div class="empty">No messages yet</div>
+        <MessageList />
       </div>
 
       <!-- INPUT -->
@@ -71,6 +95,7 @@ const chatStore = useChatStore()
   align-items: center;
   justify-content: center;
   overflow-y: auto;
+  padding-top: 16px;
 }
 
 /* INPUT */
