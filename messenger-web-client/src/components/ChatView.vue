@@ -1,66 +1,245 @@
 <script setup lang="ts">
 import { useChatStore } from '@/stores/chat'
-import { watch } from 'vue'
+import { watch, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useMessageStore } from '@/stores/message'
 import MessageList from '@/components/MessageList.vue'
-import { nextTick } from 'vue'
+import { webSocketService } from '@/services/websocket'
+import api from '@/api/api'
 
 const chatStore = useChatStore()
 const messageStore = useMessageStore()
+const newMessage = ref('')
+const isSending = ref(false)
+const isLoadingMore = ref(false)
+const hasMoreMessages = ref(true)
+const currentPage = ref(0)
+
+// Используем IntersectionObserver для отметки прочтения
+let observer: IntersectionObserver | null = null
+
+onMounted(async () => {
+  try {
+    await webSocketService.connect()
+    setupMessageObserver()
+  } catch (error) {
+    console.error('Failed to connect WebSocket:', error)
+  }
+})
+
+onUnmounted(() => {
+  webSocketService.disconnect()
+  if (observer) {
+    observer.disconnect()
+  }
+})
+
+function setupMessageObserver() {
+  observer = new IntersectionObserver(
+    (entries) => {
+      const visibleMessages = entries
+        .filter(entry => entry.isIntersecting)
+        .map(entry => {
+          const element = entry.target as HTMLElement
+          return element.dataset.messageId
+        })
+        .filter(id => id)
+
+      if (visibleMessages.length > 0) {
+        // Отмечаем видимые сообщения как прочитанные
+        markVisibleMessagesAsRead(visibleMessages as string[])
+      }
+    },
+    {
+      threshold: 0.5 // Сообщение считается видимым если 50% видно
+    }
+  )
+}
+
+function observeMessages() {
+  if (!observer) return
+
+  // Наблюдаем за всеми сообщениями
+  const messageElements = document.querySelectorAll('[data-message-id]')
+  messageElements.forEach(el => observer?.observe(el))
+}
+
+async function markVisibleMessagesAsRead(messageIds: string[]) {
+  const userStore = useUserStore()
+  const currentUserId = userStore.profile?.id
+
+  for (const msgId of messageIds) {
+    const message = messageStore.messages.find(m => m.id === msgId)
+    if (message && message.senderId !== currentUserId && message.state !== 'READ') {
+      try {
+        await api.patch(`/messages/${msgId}/read`)
+        message.state = 'READ'
+      } catch (error) {
+        console.error('Failed to mark as read:', error)
+      }
+    }
+  }
+}
 
 watch(
   () => chatStore.activeChatId,
-  async (chatId) => {
+  async (chatId, oldChatId) => {
     if (!chatId) return
 
+    if (oldChatId) {
+      webSocketService.unsubscribeFromChat(oldChatId)
+    }
+
     messageStore.clear()
+    currentPage.value = 0
+    hasMoreMessages.value = true
     await messageStore.fetchMessages(chatId)
 
-    await nextTick()
-
-    const el = document.querySelector('.messages')
-    if (el) {
-      el.scrollTop = el.scrollHeight
+    if (webSocketService.isConnected()) {
+      webSocketService.subscribeToChat(chatId)
     }
+
+    await nextTick()
+    scrollToBottom()
+    observeMessages() // Начинаем наблюдение за сообщениями
   },
   { immediate: true }
 )
 
+// Наблюдаем за новыми сообщениями
+watch(
+  () => messageStore.messages.length,
+  async () => {
+    await nextTick()
+    observeMessages()
+  }
+)
+
+function scrollToBottom() {
+  const el = document.querySelector('.messages')
+  if (el) {
+    el.scrollTop = el.scrollHeight
+  }
+}
+
+async function handleScroll(event: Event) {
+  const target = event.target as HTMLElement
+  if (!target) return
+
+  if (target.scrollTop < 50 && !isLoadingMore.value && hasMoreMessages.value) {
+    await loadMoreMessages()
+  }
+}
+
+async function loadMoreMessages() {
+  if (!chatStore.activeChatId || isLoadingMore.value || !hasMoreMessages.value) return
+
+  isLoadingMore.value = true
+  const scrollContainer = document.querySelector('.messages')
+  const oldScrollHeight = scrollContainer?.scrollHeight || 0
+
+  try {
+    currentPage.value++
+    const res = await api.get(`/chats/${chatStore.activeChatId}/messages`, {
+      params: {
+        page: currentPage.value,
+        size: 20
+      }
+    })
+
+    const newMessages = res.data.items
+    if (newMessages.length === 0) {
+      hasMoreMessages.value = false
+    } else {
+      messageStore.messages = [
+        ...newMessages.reverse(),
+        ...messageStore.messages
+      ]
+    }
+  } catch (error) {
+    console.error('Failed to load more messages:', error)
+  } finally {
+    isLoadingMore.value = false
+
+    await nextTick()
+    if (scrollContainer) {
+      const newScrollHeight = scrollContainer.scrollHeight
+      scrollContainer.scrollTop = newScrollHeight - oldScrollHeight
+    }
+    observeMessages()
+  }
+}
+
+async function sendMessage() {
+  const text = newMessage.value.trim()
+  if (!text || !chatStore.activeChatId || isSending.value) return
+
+  isSending.value = true
+
+  try {
+    await messageStore.sendMessage(chatStore.activeChatId, text)
+    newMessage.value = ''
+
+    await nextTick()
+    scrollToBottom()
+  } catch (error) {
+    console.error('Failed to send message:', error)
+    alert('Failed to send message. Please try again.')
+  } finally {
+    isSending.value = false
+  }
+}
+
+function handleKeyPress(event: KeyboardEvent) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    sendMessage()
+  }
+}
+
+// Импорт в конце для избежания циклических зависимостей
+import { useUserStore } from '@/stores/user'
 </script>
 
 <template>
   <div class="chat-container">
-
     <div v-if="chatStore.activeChat" class="chat">
-
       <!-- HEADER -->
       <div class="header">
         {{ chatStore.activeChat.title }}
       </div>
 
       <!-- MESSAGES -->
-      <div class="messages">
+      <div class="messages" @scroll="handleScroll">
+        <div v-if="isLoadingMore" class="loading-more">
+          Loading...
+        </div>
         <MessageList />
       </div>
 
       <!-- INPUT -->
       <div class="input-wrapper">
         <div class="input">
-          <input placeholder="Message" />
-          <button>➤</button>
+          <input
+            v-model="newMessage"
+            placeholder="Message"
+            @keypress="handleKeyPress"
+            :disabled="isSending"
+          />
+          <button @click="sendMessage" :disabled="isSending || !newMessage.trim()">
+            {{ isSending ? '...' : '➤' }}
+          </button>
         </div>
       </div>
-
     </div>
 
     <div v-else class="no-chat">
       Select a chat
     </div>
-
   </div>
 </template>
 
 <style scoped>
+/* Стили остаются без изменений */
 .chat-container {
   flex: 1;
   min-width: 0;
@@ -75,7 +254,6 @@ watch(
   height: 100%;
 }
 
-/* HEADER */
 .header {
   height: 60px;
   background: white;
@@ -87,18 +265,21 @@ watch(
   flex-shrink: 0;
 }
 
-/* MESSAGES */
 .messages {
   flex: 1;
   background: #f7f8fa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow-y: auto;
   padding-top: 16px;
+  position: relative;
 }
 
-/* INPUT */
+.loading-more {
+  text-align: center;
+  padding: 10px;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
 .input-wrapper {
   display: flex;
   justify-content: center;
@@ -135,12 +316,13 @@ watch(
   cursor: pointer;
 }
 
-.no-chat {
-  margin: auto;
-  color: #9ca3af;
+.input button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.empty {
+.no-chat {
+  margin: auto;
   color: #9ca3af;
 }
 </style>
