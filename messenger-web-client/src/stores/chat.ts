@@ -99,111 +99,35 @@ export const useChatStore = defineStore('chat', {
     },
 
     async fetchChats() {
-      const userStore = useUserStore()
-
-      // Загружаем сохраненных партнеров для текущего пользователя
-      this.loadSavedPartners()
 
       const res = await api.get('/chats')
       console.log('Fetched chats:', res.data)
 
-      const chats: Chat[] = []
+      const chats: Chat[] = res.data.map((chat: any) => {
+        const other = chat.otherParticipant
 
-      for (const chat of res.data) {
-        // Проверяем, есть ли сохраненная информация о партнере
-        const savedPartner = this.chatPartners.get(chat.chatId)
-
-        if (savedPartner) {
-          // Используем сохраненные данные
-          chats.push({
+        if (other) {
+          return {
             chatId: chat.chatId,
             lastMessageId: chat.lastMessageId || null,
             lastMessageCiphertext: chat.lastMessageCiphertext || null,
             lastMessageTime: chat.lastMessageTime || null,
-            title: `${savedPartner.firstName} ${savedPartner.lastName}`,
-            partnerId: savedPartner.id,
-            partnerPublicId: savedPartner.publicId
-          })
-          continue
-        }
-
-        // Если нет сохраненных данных, пытаемся получить с сервера
-        try {
-          const chatInfo = await api.get(`/chats/${chat.chatId}`)
-          console.log('Chat info:', chatInfo.data)
-
-          const participants = chatInfo.data.participants || chatInfo.data.members || []
-
-          const partner = participants.find((p: any) => {
-            const partnerId = p.userId || p.id
-            return partnerId !== userStore.profile?.id
-          })
-
-          if (partner) {
-            const partnerPublicId = partner.publicId || partner.userPublicId
-
-            if (partnerPublicId) {
-              try {
-                const user = await userStore.fetchUser(partnerPublicId)
-
-                // Сохраняем информацию о партнере
-                this.chatPartners.set(chat.chatId, {
-                  id: user.id,
-                  publicId: user.publicId,
-                  firstName: user.firstName,
-                  lastName: user.lastName
-                })
-                this.savePartners()
-
-                chats.push({
-                  chatId: chat.chatId,
-                  lastMessageId: chat.lastMessageId || null,
-                  lastMessageCiphertext: chat.lastMessageCiphertext || null,
-                  lastMessageTime: chat.lastMessageTime || null,
-                  title: `${user.firstName} ${user.lastName}`,
-                  partnerId: user.id,
-                  partnerPublicId: user.publicId
-                })
-              } catch (e) {
-                chats.push({
-                  chatId: chat.chatId,
-                  lastMessageId: chat.lastMessageId || null,
-                  lastMessageCiphertext: chat.lastMessageCiphertext || null,
-                  lastMessageTime: chat.lastMessageTime || null,
-                  title: partnerPublicId,
-                  partnerPublicId: partnerPublicId
-                })
-              }
-            } else {
-              chats.push({
-                ...chat,
-                lastMessageId: chat.lastMessageId || null,
-                lastMessageCiphertext: chat.lastMessageCiphertext || null,
-                lastMessageTime: chat.lastMessageTime || null,
-              })
-            }
-          } else {
-            chats.push({
-              ...chat,
-              lastMessageId: chat.lastMessageId || null,
-              lastMessageCiphertext: chat.lastMessageCiphertext || null,
-              lastMessageTime: chat.lastMessageTime || null,
-            })
+            title: `${other.firstName} ${other.lastName}`,
+            partnerId: other.userId,
+            partnerPublicId: other.publicId
           }
-        } catch (error) {
-          console.error('Failed to fetch chat info for', chat.chatId, error)
-          chats.push({
-            chatId: chat.chatId,
-            lastMessageId: chat.lastMessageId || null,
-            lastMessageCiphertext: chat.lastMessageCiphertext || null,
-            lastMessageTime: chat.lastMessageTime || null,
-            title: 'Chat'
-          })
         }
-      }
+
+        return {
+          chatId: chat.chatId,
+          lastMessageId: chat.lastMessageId || null,
+          lastMessageCiphertext: chat.lastMessageCiphertext || null,
+          lastMessageTime: chat.lastMessageTime || null,
+          title: 'Chat'
+        }
+      })
 
       this.chats = chats
-      console.log('Processed chats:', this.chats)
     },
 
     async createOrGetChat(publicId: string) {
@@ -218,9 +142,7 @@ export const useChatStore = defineStore('chat', {
       )
 
       if (existingChat) {
-        console.log('Chat already exists:', existingChat.chatId)
 
-        // Обновляем информацию о партнере
         this.chatPartners.set(existingChat.chatId, {
           id: user.id,
           publicId: user.publicId,
@@ -229,39 +151,51 @@ export const useChatStore = defineStore('chat', {
         })
         this.savePartners()
 
-        // Обновляем заголовок существующего чата
         existingChat.title = `${user.firstName} ${user.lastName}`
 
         return existingChat
       }
 
       // Если чата нет, создаем новый
-      console.log('Creating new chat with:', publicId)
-      const res = await api.post('/chats', { publicId })
-      const newChat = res.data
 
-      // Сохраняем информацию о партнере
-      this.chatPartners.set(newChat.chatId, {
-        id: user.id,
-        publicId: user.publicId,
-        firstName: user.firstName,
-        lastName: user.lastName
-      })
-      this.savePartners()
+      try {
+        // Используем правильное имя поля: userPublicId
+        const res = await api.post('/chats', { userPublicId: publicId })
 
-      const chatToAdd: Chat = {
-        chatId: newChat.chatId,
-        lastMessageId: null,
-        lastMessageCiphertext: null,
-        lastMessageTime: null,
-        title: `${user.firstName} ${user.lastName}`,
-        partnerId: user.id,
-        partnerPublicId: user.publicId
+        const newChat = res.data
+        const chatId = newChat.chatId || newChat.id
+
+        if (!chatId) {
+          console.error('No chatId in response:', res.data)
+          throw new Error('Failed to create chat: no chatId returned')
+        }
+
+        // Сохраняем информацию о партнере
+        this.chatPartners.set(chatId, {
+          id: user.id,
+          publicId: user.publicId,
+          firstName: user.firstName,
+          lastName: user.lastName
+        })
+        this.savePartners()
+
+        const chatToAdd: Chat = {
+          chatId: chatId,
+          lastMessageId: newChat.lastMessageId || null,
+          lastMessageCiphertext: newChat.lastMessageCiphertext || null,
+          lastMessageTime: newChat.lastMessageTime || null,
+          title: `${user.firstName} ${user.lastName}`,
+          partnerId: user.id,
+          partnerPublicId: user.publicId
+        }
+
+        this.chats.unshift(chatToAdd)
+
+        return chatToAdd
+      } catch (error) {
+        console.error('Failed to create chat:', error)
+        throw error
       }
-
-      this.chats.unshift(chatToAdd)
-
-      return newChat
     },
 
     async createChat(publicId: string) {

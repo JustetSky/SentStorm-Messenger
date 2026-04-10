@@ -13,10 +13,8 @@ import java.util.UUID;
 public class ChatListItemDto {
 
     private UUID chatId;
-
     private UUID lastMessageId;
-
     private String lastMessageCiphertext;
-
     private Instant lastMessageTime;
+    private ChatParticipantDto otherParticipant;
 }

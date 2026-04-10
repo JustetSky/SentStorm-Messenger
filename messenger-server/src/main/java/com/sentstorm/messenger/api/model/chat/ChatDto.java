@@ -3,6 +3,7 @@ package com.sentstorm.messenger.api.model.chat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -15,4 +16,10 @@ public class ChatDto {
 
     @Schema(description = "Chat ID")
     private UUID id;
+
+    @Schema(description = "Chat participants")
+    private List<ChatParticipantDto> participants;
+
+    @Schema(description = "Other participant (for private chats)")
+    private ChatParticipantDto otherParticipant;
 }

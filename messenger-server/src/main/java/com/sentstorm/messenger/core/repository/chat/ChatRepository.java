@@ -19,9 +19,15 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
             c.id as chatId,
             m.id as lastMessageId,
             m.ciphertext as lastMessageCiphertext,
-            m.createdDate as lastMessageTime
+            m.createdDate as lastMessageTime,
+            otherUser.id as otherUserId,
+            otherUser.publicId as otherUserPublicId,
+            otherUser.firstName as otherUserFirstName,
+            otherUser.lastName as otherUserLastName
         FROM Chat c
         JOIN ChatParticipant cp ON cp.chat.id = c.id
+        JOIN ChatParticipant otherCp ON otherCp.chat.id = c.id
+        JOIN otherCp.user otherUser
         LEFT JOIN Message m ON m.id = (
             SELECT m2.id
             FROM Message m2
@@ -30,6 +36,7 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
             LIMIT 1
         )
         WHERE cp.user.id = :userId
+          AND otherUser.id != :userId
         ORDER BY m.createdDate DESC NULLS LAST
     """)
     List<ChatListItemProjection> findUserChatList(UUID userId);

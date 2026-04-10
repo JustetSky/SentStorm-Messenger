@@ -2,6 +2,7 @@ package com.sentstorm.messenger.core.service.impl;
 
 import com.sentstorm.messenger.api.model.chat.ChatDto;
 import com.sentstorm.messenger.api.model.chat.ChatListItemDto;
+import com.sentstorm.messenger.api.model.chat.ChatParticipantDto;
 import com.sentstorm.messenger.api.model.chat.CreateChatRequest;
 import com.sentstorm.messenger.core.entity.chat.Chat;
 import com.sentstorm.messenger.core.entity.chat.ChatParticipant;
@@ -56,24 +57,35 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<ChatListItemDto> getUserChats() {
-
         User currentUser = currentUserService.getCurrentUser();
 
         return chatRepository.findUserChatList(currentUser.getId())
                 .stream()
-                .map(p -> ChatListItemDto.builder()
-                        .chatId(p.getChatId())
-                        .lastMessageId(p.getLastMessageId())
-                        .lastMessageCiphertext(p.getLastMessageCiphertext())
-                        .lastMessageTime(p.getLastMessageTime())
-                        .build()
-                )
+                .map(p -> {
+                    // Создаем DTO для второго участника
+                    ChatParticipantDto otherParticipant = null;
+                    if (p.getOtherUserId() != null) {
+                        otherParticipant = ChatParticipantDto.builder()
+                                .userId(p.getOtherUserId())
+                                .publicId(p.getOtherUserPublicId())
+                                .firstName(p.getOtherUserFirstName())
+                                .lastName(p.getOtherUserLastName())
+                                .build();
+                    }
+
+                    return ChatListItemDto.builder()
+                            .chatId(p.getChatId())
+                            .lastMessageId(p.getLastMessageId())
+                            .lastMessageCiphertext(p.getLastMessageCiphertext())
+                            .lastMessageTime(p.getLastMessageTime())
+                            .otherParticipant(otherParticipant)
+                            .build();
+                })
                 .toList();
     }
 
     @Override
     public ChatDto getChat(UUID chatId) {
-
         User currentUser = currentUserService.getCurrentUser();
 
         boolean isParticipant = chatParticipantRepository
@@ -88,8 +100,35 @@ public class ChatServiceImpl implements ChatService {
                         new ServiceException(ErrorCode.NOT_FOUND, "Chat not found")
                 );
 
+        // Получаем всех участников чата
+        List<User> participants = chatParticipantRepository.findUsersByChatId(chatId);
+
+        // Преобразуем в DTO
+        List<ChatParticipantDto> participantDtos = participants.stream()
+                .map(user -> ChatParticipantDto.builder()
+                        .userId(user.getId())
+                        .publicId(user.getPublicId())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .build())
+                .toList();
+
+        // Находим второго участника (для личных чатов)
+        ChatParticipantDto otherParticipant = participants.stream()
+                .filter(user -> !user.getId().equals(currentUser.getId()))
+                .findFirst()
+                .map(user -> ChatParticipantDto.builder()
+                        .userId(user.getId())
+                        .publicId(user.getPublicId())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .build())
+                .orElse(null);
+
         return ChatDto.builder()
                 .id(chat.getId())
+                .participants(participantDtos)
+                .otherParticipant(otherParticipant)
                 .build();
     }
 
