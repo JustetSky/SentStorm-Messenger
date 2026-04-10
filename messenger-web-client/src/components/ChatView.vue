@@ -1,21 +1,24 @@
 <script setup lang="ts">
 import { useChatStore } from '@/stores/chat'
-import { watch, ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { watch, ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useMessageStore } from '@/stores/message'
 import MessageList from '@/components/MessageList.vue'
 import { webSocketService } from '@/services/websocket'
 import api from '@/api/api'
-import { computed } from 'vue'
+import UserProfile from './UserProfile.vue'
+import { useUserStore } from '@/stores/user'
 
 const chatStore = useChatStore()
 const messageStore = useMessageStore()
+const userStore = useUserStore()
 const newMessage = ref('')
 const isSending = ref(false)
 const isLoadingMore = ref(false)
 const hasMoreMessages = ref(true)
 const currentPage = ref(0)
+const showPartnerProfile = ref(false)
+const partnerInfo = ref<any>(null)
 
-// Используем IntersectionObserver для отметки прочтения
 let observer: IntersectionObserver | null = null
 
 const chatTitle = computed(() => {
@@ -23,10 +26,43 @@ const chatTitle = computed(() => {
   return chatStore.getChatTitle(chatStore.activeChatId)
 })
 
+// Загружаем информацию о партнере для профиля
+async function loadPartnerInfo() {
+  if (!chatStore.activeChat) return
+
+  const partnerPublicId = chatStore.activeChat.partnerPublicId
+  if (partnerPublicId) {
+    try {
+      partnerInfo.value = await userStore.fetchUser(partnerPublicId)
+    } catch (error) {
+      console.error('Failed to load partner info:', error)
+    }
+  }
+}
+
+// Открыть профиль собеседника
+function openPartnerProfile() {
+  loadPartnerInfo()
+  showPartnerProfile.value = true
+}
+
+// Выход из чата
+function closeChat() {
+  chatStore.setActiveChat('')
+}
+
+// Обработчик ESC
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    closeChat()
+  }
+}
+
 onMounted(async () => {
   try {
     await webSocketService.connect()
     setupMessageObserver()
+    window.addEventListener('keydown', handleKeyDown)
   } catch (error) {
     console.error('Failed to connect WebSocket:', error)
   }
@@ -34,6 +70,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   webSocketService.disconnect()
+  window.removeEventListener('keydown', handleKeyDown)
   if (observer) {
     observer.disconnect()
   }
@@ -51,26 +88,22 @@ function setupMessageObserver() {
         .filter(id => id)
 
       if (visibleMessages.length > 0) {
-        // Отмечаем видимые сообщения как прочитанные
         markVisibleMessagesAsRead(visibleMessages as string[])
       }
     },
     {
-      threshold: 0.5 // Сообщение считается видимым если 50% видно
+      threshold: 0.5
     }
   )
 }
 
 function observeMessages() {
   if (!observer) return
-
-  // Наблюдаем за всеми сообщениями
   const messageElements = document.querySelectorAll('[data-message-id]')
   messageElements.forEach(el => observer?.observe(el))
 }
 
 async function markVisibleMessagesAsRead(messageIds: string[]) {
-  const userStore = useUserStore()
   const currentUserId = userStore.profile?.id
 
   for (const msgId of messageIds) {
@@ -106,12 +139,11 @@ watch(
 
     await nextTick()
     scrollToBottom()
-    observeMessages() // Начинаем наблюдение за сообщениями
+    observeMessages()
   },
   { immediate: true }
 )
 
-// Наблюдаем за новыми сообщениями
 watch(
   () => messageStore.messages.length,
   async () => {
@@ -201,17 +233,20 @@ function handleKeyPress(event: KeyboardEvent) {
     sendMessage()
   }
 }
-
-// Импорт в конце для избежания циклических зависимостей
-import { useUserStore } from '@/stores/user'
 </script>
 
 <template>
   <div class="chat-container">
     <div v-if="chatStore.activeChat" class="chat">
-      <!-- HEADER -->
-      <div class="header">
-        {{ chatTitle }}
+      <!-- HEADER с кликом для профиля -->
+      <div class="header" @click="openPartnerProfile">
+        <div class="header-avatar">
+          {{ chatTitle.split(' ').map(w => w[0]).join('').slice(0, 2) }}
+        </div>
+        <span class="header-title">{{ chatTitle }}</span>
+        <button class="close-chat-btn" @click.stop="closeChat" title="Close chat (ESC)">
+          ×
+        </button>
       </div>
 
       <!-- MESSAGES -->
@@ -239,13 +274,22 @@ import { useUserStore } from '@/stores/user'
     </div>
 
     <div v-else class="no-chat">
-      Select a chat
+      <div class="no-chat-content">
+        <div class="no-chat-icon">💬</div>
+        <b>Select a chat</b>
+      </div>
     </div>
+
+    <!-- Профиль собеседника -->
+    <UserProfile
+      :show="showPartnerProfile"
+      :user="partnerInfo"
+      @close="showPartnerProfile = false"
+    />
   </div>
 </template>
 
 <style scoped>
-/* Стили остаются без изменений */
 .chat-container {
   flex: 1;
   min-width: 0;
@@ -267,8 +311,55 @@ import { useUserStore } from '@/stores/user'
   display: flex;
   align-items: center;
   padding: 0 16px;
-  font-weight: 600;
+  gap: 12px;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.header:hover {
+  background: #f9fafb;
+}
+
+.header-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.header-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 15px;
+  color: #111827;
+}
+
+.close-chat-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.close-chat-btn:hover {
+  background: #f1f3f6;
+  color: #111827;
 }
 
 .messages {
@@ -328,7 +419,27 @@ import { useUserStore } from '@/stores/user'
 }
 
 .no-chat {
-  margin: auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f8fa;
+}
+
+.no-chat-content {
+  text-align: center;
   color: #9ca3af;
+}
+
+.no-chat-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.no-chat-content p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
 }
 </style>

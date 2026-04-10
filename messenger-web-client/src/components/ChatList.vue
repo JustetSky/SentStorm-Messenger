@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import UserSearch from './UserSearch.vue'
+import UserMenu from './UserMenu.vue'
+import UserProfile from './UserProfile.vue'
 
 const chatStore = useChatStore()
+const showProfile = ref(false)
 
 function openChat(chatId: string) {
   chatStore.setActiveChat(chatId)
@@ -32,8 +36,11 @@ function getChatTitle(chatId: string): string {
 
 <template>
   <div class="sidebar">
-    <!-- SEARCH -->
-    <UserSearch />
+    <!-- HEADER с бургером и поиском -->
+    <div class="sidebar-header">
+      <UserMenu @open-profile="showProfile = true" />
+      <UserSearch />
+    </div>
 
     <!-- LIST -->
     <div class="chat-list">
@@ -64,6 +71,9 @@ function getChatTitle(chatId: string): string {
         </div>
       </div>
     </div>
+
+    <!-- Профиль модалка -->
+    <UserProfile :show="showProfile" @close="showProfile = false" />
   </div>
 </template>
 
@@ -76,6 +86,21 @@ function getChatTitle(chatId: string): string {
   border-right: 1px solid #e6e9ef;
   display: flex;
   flex-direction: column;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 8px 8px 4px;
+  border-bottom: 1px solid #e6e9ef;
+}
+
+.sidebar-header :deep(.search-container) {
+  flex: 1;
+}
+
+.sidebar-header :deep(.search-input-wrapper) {
+  padding: 0;
 }
 
 .chat-list {

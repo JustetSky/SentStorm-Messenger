@@ -15,15 +15,16 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@types/sockjs-client": "^1.5.4",
+    "@types/stompjs": "^2.3.9",
     "axios": "^1.14.0",
+    "emoji-picker-element": "^1.29.1",
     "keycloak-js": "^26.2.3",
     "pinia": "^3.0.4",
-    "vue": "^3.5.31",
-    "vue-router": "^5.0.4",
     "sockjs-client": "^1.6.1",
     "stompjs": "^2.3.3",
-    "@types/sockjs-client": "^1.5.4",
-    "@types/stompjs": "^2.3.9"
+    "vue": "^3.5.31",
+    "vue-router": "^5.0.4"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
