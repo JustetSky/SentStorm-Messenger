@@ -1,19 +1,39 @@
 <script setup lang="ts">
 import { useChatStore } from '@/stores/chat'
+import UserSearch from './UserSearch.vue'
 
 const chatStore = useChatStore()
 
 function openChat(chatId: string) {
   chatStore.setActiveChat(chatId)
 }
+
+function formatTime(dateString: string | null) {
+  if (!dateString) return ''
+
+  const date = new Date(dateString)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (days === 0) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } else if (days === 1) {
+    return 'Yesterday'
+  } else {
+    return date.toLocaleDateString()
+  }
+}
+
+function getChatTitle(chatId: string): string {
+  return chatStore.getChatTitle(chatId)
+}
 </script>
 
 <template>
   <div class="sidebar">
     <!-- SEARCH -->
-    <div class="search">
-      <input placeholder="Search" />
-    </div>
+    <UserSearch />
 
     <!-- LIST -->
     <div class="chat-list">
@@ -24,14 +44,17 @@ function openChat(chatId: string) {
         :class="{ active: chat.chatId === chatStore.activeChatId }"
         @click="openChat(chat.chatId)"
       >
+        <div class="chat-avatar">
+          {{ getChatTitle(chat.chatId).split(' ').map(w => w[0]).join('').slice(0, 2) }}
+        </div>
         <div class="chat-content">
           <div class="top-row">
             <span class="chat-name">
-              {{ chat.title }}
+              {{ getChatTitle(chat.chatId) }}
             </span>
 
             <span class="time">
-              {{ chat.lastMessageTime ? '12:30' : '' }}
+              {{ formatTime(chat.lastMessageTime) }}
             </span>
           </div>
 
@@ -55,27 +78,15 @@ function openChat(chatId: string) {
   flex-direction: column;
 }
 
-.search {
-  padding: 12px;
-}
-
-.search input {
-  width: 100%;
-  height: 38px;
-  border-radius: 20px;
-  border: none;
-  background: #f1f3f6;
-  padding: 0 14px;
-  outline: none;
-  box-sizing: border-box;
-}
-
 .chat-list {
   flex: 1;
   overflow-y: auto;
 }
 
 .chat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 12px 16px;
   cursor: pointer;
   transition: background 0.2s;
@@ -89,7 +100,23 @@ function openChat(chatId: string) {
   background: #e9f2ff;
 }
 
+.chat-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 .chat-content {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -98,21 +125,30 @@ function openChat(chatId: string) {
 .top-row {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
 }
 
 .chat-name {
   font-weight: 600;
   font-size: 14px;
   color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
 }
 
 .time {
   font-size: 12px;
   color: #9ca3af;
+  flex-shrink: 0;
 }
 
 .bottom-row {
   font-size: 13px;
   color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

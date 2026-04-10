@@ -5,6 +5,7 @@ import { useMessageStore } from '@/stores/message'
 import MessageList from '@/components/MessageList.vue'
 import { webSocketService } from '@/services/websocket'
 import api from '@/api/api'
+import { computed } from 'vue'
 
 const chatStore = useChatStore()
 const messageStore = useMessageStore()
@@ -16,6 +17,11 @@ const currentPage = ref(0)
 
 // Используем IntersectionObserver для отметки прочтения
 let observer: IntersectionObserver | null = null
+
+const chatTitle = computed(() => {
+  if (!chatStore.activeChatId) return ''
+  return chatStore.getChatTitle(chatStore.activeChatId)
+})
 
 onMounted(async () => {
   try {
@@ -205,7 +211,7 @@ import { useUserStore } from '@/stores/user'
     <div v-if="chatStore.activeChat" class="chat">
       <!-- HEADER -->
       <div class="header">
-        {{ chatStore.activeChat.title }}
+        {{ chatTitle }}
       </div>
 
       <!-- MESSAGES -->
