@@ -52,35 +52,59 @@ export const useChatStore = defineStore('chat', {
   },
 
   actions: {
+    // Получаем ключ для localStorage с учетом пользователя
+    getStorageKey(): string {
+      const userStore = useUserStore()
+      const userId = userStore.profile?.id
+      if (!userId) return 'chatPartners_anonymous'
+      return `chatPartners_${userId}`
+    },
+
     // Загружаем сохраненные данные о партнерах из localStorage
     loadSavedPartners() {
       try {
-        const saved = localStorage.getItem('chatPartners')
+        const key = this.getStorageKey()
+        const saved = localStorage.getItem(key)
         if (saved) {
           const partners = JSON.parse(saved)
           this.chatPartners = new Map(Object.entries(partners))
+          console.log('Loaded partners from:', key, partners)
+        } else {
+          this.chatPartners.clear()
+          console.log('No saved partners for:', key)
         }
       } catch (e) {
         console.error('Failed to load saved partners:', e)
+        this.chatPartners.clear()
       }
     },
 
     // Сохраняем данные о партнерах в localStorage
     savePartners() {
       try {
+        const key = this.getStorageKey()
         const obj = Object.fromEntries(this.chatPartners)
-        localStorage.setItem('chatPartners', JSON.stringify(obj))
+        localStorage.setItem(key, JSON.stringify(obj))
+        console.log('Saved partners to:', key, obj)
       } catch (e) {
         console.error('Failed to save partners:', e)
       }
     },
 
+    // Очищаем кеш при смене пользователя
+    clearCache() {
+      this.chats = []
+      this.activeChatId = null
+      this.chatPartners.clear()
+    },
+
     async fetchChats() {
+      const userStore = useUserStore()
+
+      // Загружаем сохраненных партнеров для текущего пользователя
       this.loadSavedPartners()
 
-      const userStore = useUserStore()
       const res = await api.get('/chats')
-
       console.log('Fetched chats:', res.data)
 
       const chats: Chat[] = []
@@ -196,7 +220,7 @@ export const useChatStore = defineStore('chat', {
       if (existingChat) {
         console.log('Chat already exists:', existingChat.chatId)
 
-        // Обновляем информацию о партнере на всякий случай
+        // Обновляем информацию о партнере
         this.chatPartners.set(existingChat.chatId, {
           id: user.id,
           publicId: user.publicId,
@@ -204,6 +228,9 @@ export const useChatStore = defineStore('chat', {
           lastName: user.lastName
         })
         this.savePartners()
+
+        // Обновляем заголовок существующего чата
+        existingChat.title = `${user.firstName} ${user.lastName}`
 
         return existingChat
       }

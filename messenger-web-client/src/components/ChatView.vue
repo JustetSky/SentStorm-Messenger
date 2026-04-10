@@ -7,6 +7,7 @@ import { webSocketService } from '@/services/websocket'
 import api from '@/api/api'
 import UserProfile from './UserProfile.vue'
 import { useUserStore } from '@/stores/user'
+import EmojiPicker from './EmojiPicker.vue'
 
 const chatStore = useChatStore()
 const messageStore = useMessageStore()
@@ -18,63 +19,107 @@ const hasMoreMessages = ref(true)
 const currentPage = ref(0)
 const showPartnerProfile = ref(false)
 const partnerInfo = ref<any>(null)
+const showEmojiPicker = ref(false)
+const inputRef = ref<HTMLInputElement | null>(null)
 
 let observer: IntersectionObserver | null = null
+let statusInterval: number | null = null
 
 const chatTitle = computed(() => {
   if (!chatStore.activeChatId) return ''
   return chatStore.getChatTitle(chatStore.activeChatId)
 })
 
-// Загружаем информацию о партнере для профиля
+const partnerStatus = computed(() => {
+  if (!partnerInfo.value) return ''
+  return formatLastSeen(partnerInfo.value.lastSeen)
+})
+
+const isPartnerOnline = computed(() => {
+  if (!partnerInfo.value?.lastSeen) return false
+  const lastSeen = new Date(partnerInfo.value.lastSeen)
+  const now = new Date()
+  const diffSeconds = (now.getTime() - lastSeen.getTime()) / 1000
+  return diffSeconds < 60
+})
+
+function formatLastSeen(lastSeen: string | undefined): string {
+  if (!lastSeen) return ''
+  const date = new Date(lastSeen)
+  const now = new Date()
+  const diffSeconds = (now.getTime() - date.getTime()) / 1000
+
+  if (diffSeconds < 60) return 'Online'
+  if (diffSeconds < 3600) return `Last seen ${Math.floor(diffSeconds / 60)} min ago`
+  if (diffSeconds < 86400) return `Last seen today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+  if (diffSeconds < 172800) return `Last seen yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+  return `Last seen ${date.toLocaleDateString()}`
+}
+
+async function refreshPartnerStatus() {
+  if (!chatStore.activeChat?.partnerPublicId) return
+
+  try {
+    const freshUser = await api.get(`/users/${chatStore.activeChat.partnerPublicId}`)
+    partnerInfo.value = freshUser.data
+    userStore.userCache.set(freshUser.data.id, freshUser.data)
+    userStore.userCache.set(freshUser.data.publicId, freshUser.data)
+  } catch (error) {
+    console.error('Failed to refresh partner status:', error)
+  }
+}
+
 async function loadPartnerInfo() {
   if (!chatStore.activeChat) return
 
   const partnerPublicId = chatStore.activeChat.partnerPublicId
   if (partnerPublicId) {
     try {
-      partnerInfo.value = await userStore.fetchUser(partnerPublicId)
+      const freshUser = await api.get(`/users/${partnerPublicId}`)
+      partnerInfo.value = freshUser.data
+      userStore.userCache.set(freshUser.data.id, freshUser.data)
+      userStore.userCache.set(freshUser.data.publicId, freshUser.data)
     } catch (error) {
       console.error('Failed to load partner info:', error)
     }
   }
 }
 
-// Открыть профиль собеседника
 function openPartnerProfile() {
   loadPartnerInfo()
   showPartnerProfile.value = true
 }
 
-// Выход из чата
 function closeChat() {
   chatStore.setActiveChat('')
 }
 
-// Обработчик ESC
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
-    closeChat()
+    if (showEmojiPicker.value) {
+      showEmojiPicker.value = false
+    } else {
+      closeChat()
+    }
   }
 }
 
-onMounted(async () => {
-  try {
-    await webSocketService.connect()
-    setupMessageObserver()
-    window.addEventListener('keydown', handleKeyDown)
-  } catch (error) {
-    console.error('Failed to connect WebSocket:', error)
+function handleClickOutside(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  if (!target.closest('.emoji-picker-wrapper') && !target.closest('.emoji-btn')) {
+    showEmojiPicker.value = false
   }
-})
+}
 
-onUnmounted(() => {
-  webSocketService.disconnect()
-  window.removeEventListener('keydown', handleKeyDown)
-  if (observer) {
-    observer.disconnect()
-  }
-})
+function insertEmoji(emoji: string) {
+  newMessage.value += emoji
+  showEmojiPicker.value = false
+  inputRef.value?.focus()
+}
+
+function toggleEmojiPicker() {
+  showEmojiPicker.value = !showEmojiPicker.value
+}
 
 function setupMessageObserver() {
   observer = new IntersectionObserver(
@@ -91,9 +136,7 @@ function setupMessageObserver() {
         markVisibleMessagesAsRead(visibleMessages as string[])
       }
     },
-    {
-      threshold: 0.5
-    }
+    { threshold: 0.5 }
   )
 }
 
@@ -118,39 +161,6 @@ async function markVisibleMessagesAsRead(messageIds: string[]) {
     }
   }
 }
-
-watch(
-  () => chatStore.activeChatId,
-  async (chatId, oldChatId) => {
-    if (!chatId) return
-
-    if (oldChatId) {
-      webSocketService.unsubscribeFromChat(oldChatId)
-    }
-
-    messageStore.clear()
-    currentPage.value = 0
-    hasMoreMessages.value = true
-    await messageStore.fetchMessages(chatId)
-
-    if (webSocketService.isConnected()) {
-      webSocketService.subscribeToChat(chatId)
-    }
-
-    await nextTick()
-    scrollToBottom()
-    observeMessages()
-  },
-  { immediate: true }
-)
-
-watch(
-  () => messageStore.messages.length,
-  async () => {
-    await nextTick()
-    observeMessages()
-  }
-)
 
 function scrollToBottom() {
   const el = document.querySelector('.messages')
@@ -178,10 +188,7 @@ async function loadMoreMessages() {
   try {
     currentPage.value++
     const res = await api.get(`/chats/${chatStore.activeChatId}/messages`, {
-      params: {
-        page: currentPage.value,
-        size: 20
-      }
+      params: { page: currentPage.value, size: 20 }
     })
 
     const newMessages = res.data.items
@@ -233,17 +240,87 @@ function handleKeyPress(event: KeyboardEvent) {
     sendMessage()
   }
 }
+
+onMounted(async () => {
+  try {
+    await webSocketService.connect()
+    setupMessageObserver()
+    window.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('click', handleClickOutside)
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && chatStore.activeChatId) {
+        refreshPartnerStatus()
+      }
+    })
+  } catch (error) {
+    console.error('Failed to connect WebSocket:', error)
+  }
+})
+
+onUnmounted(() => {
+  webSocketService.disconnect()
+  window.removeEventListener('keydown', handleKeyDown)
+  document.removeEventListener('click', handleClickOutside)
+  if (observer) {
+    observer.disconnect()
+  }
+  if (statusInterval) {
+    clearInterval(statusInterval)
+  }
+})
+
+watch(
+  () => chatStore.activeChatId,
+  async (chatId, oldChatId) => {
+    if (!chatId) return
+
+    if (oldChatId) {
+      webSocketService.unsubscribeFromChat(oldChatId)
+    }
+
+    messageStore.clear()
+    currentPage.value = 0
+    hasMoreMessages.value = true
+    await messageStore.fetchMessages(chatId)
+    await refreshPartnerStatus()
+
+    if (webSocketService.isConnected()) {
+      webSocketService.subscribeToChat(chatId)
+    }
+
+    await nextTick()
+    scrollToBottom()
+    observeMessages()
+
+    if (statusInterval) clearInterval(statusInterval)
+    statusInterval = window.setInterval(refreshPartnerStatus, 30000)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => messageStore.messages.length,
+  async () => {
+    await nextTick()
+    observeMessages()
+  }
+)
 </script>
 
 <template>
   <div class="chat-container">
     <div v-if="chatStore.activeChat" class="chat">
-      <!-- HEADER с кликом для профиля -->
+      <!-- HEADER -->
       <div class="header" @click="openPartnerProfile">
-        <div class="header-avatar">
+        <div class="header-avatar" :class="{ online: isPartnerOnline }">
           {{ chatTitle.split(' ').map(w => w[0]).join('').slice(0, 2) }}
+          <span v-if="isPartnerOnline" class="online-indicator"></span>
         </div>
-        <span class="header-title">{{ chatTitle }}</span>
+        <div class="header-info">
+          <span class="header-title">{{ chatTitle }}</span>
+          <span v-if="partnerStatus" class="header-status">{{ partnerStatus }}</span>
+        </div>
         <button class="close-chat-btn" @click.stop="closeChat" title="Close chat (ESC)">
           ×
         </button>
@@ -259,16 +336,26 @@ function handleKeyPress(event: KeyboardEvent) {
 
       <!-- INPUT -->
       <div class="input-wrapper">
-        <div class="input">
-          <input
-            v-model="newMessage"
-            placeholder="Message"
-            @keypress="handleKeyPress"
-            :disabled="isSending"
-          />
-          <button @click="sendMessage" :disabled="isSending || !newMessage.trim()">
-            {{ isSending ? '...' : '➤' }}
-          </button>
+        <div class="input-container">
+          <div class="input">
+            <input
+              ref="inputRef"
+              v-model="newMessage"
+              placeholder="Message"
+              @keypress="handleKeyPress"
+              :disabled="isSending"
+            />
+            <button class="emoji-btn" @click="toggleEmojiPicker" title="Add emoji">
+              🙂
+            </button>
+            <button class="send-btn" @click="sendMessage" :disabled="isSending || !newMessage.trim()">
+              {{ isSending ? '...' : '➤' }}
+            </button>
+          </div>
+
+          <div v-if="showEmojiPicker" class="emoji-picker-wrapper">
+            <EmojiPicker @select="insertEmoji" />
+          </div>
         </div>
       </div>
     </div>
@@ -280,7 +367,6 @@ function handleKeyPress(event: KeyboardEvent) {
       </div>
     </div>
 
-    <!-- Профиль собеседника -->
     <UserProfile
       :show="showPartnerProfile"
       :user="partnerInfo"
@@ -322,6 +408,7 @@ function handleKeyPress(event: KeyboardEvent) {
 }
 
 .header-avatar {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -335,11 +422,33 @@ function handleKeyPress(event: KeyboardEvent) {
   flex-shrink: 0;
 }
 
-.header-title {
+.online-indicator {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border: 2px solid white;
+  border-radius: 50%;
+}
+
+.header-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.header-title {
   font-weight: 600;
   font-size: 15px;
   color: #111827;
+}
+
+.header-status {
+  font-size: 12px;
+  color: #9ca3af;
 }
 
 .close-chat-btn {
@@ -386,11 +495,16 @@ function handleKeyPress(event: KeyboardEvent) {
   flex-shrink: 0;
 }
 
-.input {
+.input-container {
+  position: relative;
   width: 100%;
   max-width: 800px;
+}
+
+.input {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  align-items: center;
 }
 
 .input input {
@@ -403,7 +517,26 @@ function handleKeyPress(event: KeyboardEvent) {
   outline: none;
 }
 
-.input button {
+.emoji-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f3f6;
+  color: #6b7280;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.emoji-btn:hover {
+  background: #e5e7eb;
+}
+
+.send-btn {
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -413,9 +546,19 @@ function handleKeyPress(event: KeyboardEvent) {
   cursor: pointer;
 }
 
-.input button:disabled {
+.send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.emoji-picker-wrapper {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .no-chat {
@@ -435,11 +578,5 @@ function handleKeyPress(event: KeyboardEvent) {
   font-size: 64px;
   margin-bottom: 16px;
   opacity: 0.5;
-}
-
-.no-chat-content p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 14px;
 }
 </style>

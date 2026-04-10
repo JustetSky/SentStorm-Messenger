@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
 import type { User } from '@/stores/user'
+import { computed } from 'vue'
 
 const props = defineProps<{
   show: boolean
@@ -13,13 +14,35 @@ const emit = defineEmits<{
 
 const userStore = useUserStore()
 
+const isOnline = computed(() => {
+  const targetUser = props.user || userStore.profile
+  if (!targetUser?.lastSeen) return false
+  const lastSeen = new Date(targetUser.lastSeen)
+  const now = new Date()
+  const diffSeconds = (now.getTime() - lastSeen.getTime()) / 1000
+  return diffSeconds < 60
+})
+
 function close() {
   emit('close')
 }
 
-function formatDate(dateString: string | undefined) {
-  if (!dateString) return 'Never'
-  return new Date(dateString).toLocaleString()
+function formatLastSeen(lastSeen: string | undefined): string {
+  if (!lastSeen) return 'Never'
+
+  const date = new Date(lastSeen)
+  const now = new Date()
+  const diffSeconds = (now.getTime() - date.getTime()) / 1000
+
+  // Для себя всегда показываем Online
+  if (!props.user) return 'Online'
+
+  // Для других пользователей
+  if (diffSeconds < 60) return 'Online'
+  if (diffSeconds < 3600) return `Last seen ${Math.floor(diffSeconds / 60)} min ago`
+  if (diffSeconds < 86400) return `Last seen today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+  if (diffSeconds < 172800) return `Last seen yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+  return `Last seen ${date.toLocaleDateString()}`
 }
 </script>
 
@@ -32,8 +55,9 @@ function formatDate(dateString: string | undefined) {
       </div>
 
       <div v-if="user || userStore.profile" class="profile-body">
-        <div class="profile-avatar">
+        <div class="profile-avatar" :class="{ online: isOnline }">
           {{ (user || userStore.profile)?.firstName?.charAt(0) }}{{ (user || userStore.profile)?.lastName?.charAt(0) }}
+          <span v-if="isOnline" class="online-indicator"></span>
         </div>
 
         <div class="profile-name">
@@ -48,6 +72,13 @@ function formatDate(dateString: string | undefined) {
         <div class="profile-field">
           <label>Email</label>
           <div class="field-value">{{ (user || userStore.profile)?.email }}</div>
+        </div>
+
+        <div class="profile-field">
+          <label>Status</label>
+          <div class="field-value" :class="{ online: isOnline }">
+            {{ formatLastSeen((user || userStore.profile)?.lastSeen) }}
+          </div>
         </div>
       </div>
     </div>
@@ -120,6 +151,7 @@ function formatDate(dateString: string | undefined) {
 }
 
 .profile-avatar {
+  position: relative;
   width: 80px;
   height: 80px;
   border-radius: 50%;
@@ -131,6 +163,17 @@ function formatDate(dateString: string | undefined) {
   font-weight: 600;
   font-size: 28px;
   margin: 0 auto 16px;
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  background: #22c55e;
+  border: 3px solid white;
+  border-radius: 50%;
 }
 
 .profile-name {
@@ -160,9 +203,8 @@ function formatDate(dateString: string | undefined) {
   padding: 8px 0;
 }
 
-.field-small {
-  font-size: 12px;
-  font-family: monospace;
-  word-break: break-all;
+.field-value.online {
+  color: #22c55e;
+  font-weight: 500;
 }
 </style>

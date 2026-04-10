@@ -1,17 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import keycloak from '@/auth/keycloak'
+import api from '@/api/api'
 
 const userStore = useUserStore()
 const showMenu = ref(false)
+const currentStatus = ref('')
+
+let statusInterval: number | null = null
+
+// Функция отправки пинга для обновления lastSeen
+async function pingOnline() {
+  try {
+    // Отправляем легкий запрос для обновления lastSeen на сервере
+    await api.get('/users/me')
+    await userStore.fetchMe() // Обновляем данные профиля
+  } catch (error) {
+    console.error('Failed to ping:', error)
+  }
+}
 
 function toggleMenu() {
   showMenu.value = !showMenu.value
-}
-
-function closeMenu() {
-  showMenu.value = false
 }
 
 function openProfile() {
@@ -20,12 +31,12 @@ function openProfile() {
 }
 
 function logout() {
+  if (statusInterval) clearInterval(statusInterval)
   keycloak.logout({
     redirectUri: window.location.origin
   })
 }
 
-// Закрываем меню при клике вне
 function handleClickOutside(event: MouseEvent) {
   const target = event.target as HTMLElement
   if (!target.closest('.user-menu')) {
@@ -33,13 +44,38 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-// Слушаем клики вне компонента
-import { onMounted, onUnmounted } from 'vue'
+const isOnline = computed(() => {
+  // Всегда показываем себя как онлайн
+  return true
+})
+
+function formatLastSeen(lastSeen: string | undefined): string {
+  // Для себя всегда показываем "Online"
+  return 'Online'
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+
+  // Пингуем сразу
+  pingOnline()
+
+  // Пингуем каждые 30 секунд для поддержания онлайн статуса
+  statusInterval = window.setInterval(pingOnline, 30000)
+
+  // Пингуем при возвращении на вкладку
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      pingOnline()
+    }
+  })
 })
+
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (statusInterval) {
+    clearInterval(statusInterval)
+  }
 })
 
 const emit = defineEmits<{
@@ -58,11 +94,13 @@ const emit = defineEmits<{
     <div v-if="showMenu" class="menu-dropdown" @click.stop>
       <div class="menu-header">
         <div class="user-info">
-          <div class="user-avatar">
+          <div class="user-avatar online">
             {{ userStore.profile?.firstName?.charAt(0) }}{{ userStore.profile?.lastName?.charAt(0) }}
+            <span class="online-indicator"></span>
           </div>
           <div class="user-details">
             <div class="user-name">{{ userStore.profile?.firstName }} {{ userStore.profile?.lastName }}</div>
+            <div class="user-status online-text">Online</div>
             <div class="user-public-id">@{{ userStore.profile?.publicId }}</div>
           </div>
         </div>
@@ -108,9 +146,13 @@ const emit = defineEmits<{
   display: block;
   width: 20px;
   height: 2px;
-  background: #111827;
+  background: #6b7280;
   border-radius: 1px;
   transition: all 0.2s;
+}
+
+.burger-btn:hover span {
+  background: #111827;
 }
 
 .menu-dropdown {
@@ -137,6 +179,7 @@ const emit = defineEmits<{
 }
 
 .user-avatar {
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -150,6 +193,17 @@ const emit = defineEmits<{
   flex-shrink: 0;
 }
 
+.online-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: #22c55e;
+  border: 2px solid white;
+  border-radius: 50%;
+}
+
 .user-details {
   flex: 1;
   min-width: 0;
@@ -157,15 +211,21 @@ const emit = defineEmits<{
 
 .user-name {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.user-status {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
 .user-public-id {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
   margin-top: 2px;
 }
@@ -194,9 +254,7 @@ const emit = defineEmits<{
   color: #ef4444;
 }
 
-.menu-item .icon {
-  font-size: 18px;
-  width: 20px;
-  text-align: center;
+.online-text {
+  color: #22c55e !important;
 }
 </style>
