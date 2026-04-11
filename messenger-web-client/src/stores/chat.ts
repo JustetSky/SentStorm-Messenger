@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
+import {defineStore} from 'pinia'
 import api from '@/api/api'
-import { useUserStore } from './user'
+import {useUserStore} from './user'
 
 export interface Chat {
   chatId: string
@@ -99,14 +99,24 @@ export const useChatStore = defineStore('chat', {
     },
 
     async fetchChats() {
+      // Загружаем сохраненных партнеров при старте
+      this.loadSavedPartners()
 
       const res = await api.get('/chats')
       console.log('Fetched chats:', res.data)
 
-      const chats: Chat[] = res.data.map((chat: any) => {
+      this.chats = res.data.map((chat: any) => {
         const other = chat.otherParticipant
 
         if (other) {
+          // Сохраняем в chatPartners
+          this.chatPartners.set(chat.chatId, {
+            id: other.userId,
+            publicId: other.publicId,
+            firstName: other.firstName,
+            lastName: other.lastName
+          })
+
           return {
             chatId: chat.chatId,
             lastMessageId: chat.lastMessageId || null,
@@ -126,8 +136,7 @@ export const useChatStore = defineStore('chat', {
           title: 'Chat'
         }
       })
-
-      this.chats = chats
+      this.savePartners()
     },
 
     async createOrGetChat(publicId: string) {
@@ -219,8 +228,40 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
-    setActiveChat(chatId: string) {
+    setActiveChat(chatId: string | null) {
       this.activeChatId = chatId
+    },
+
+    deleteChat(chatId: string) {
+      const index = this.chats.findIndex(c => c.chatId === chatId)
+      if (index !== -1) {
+        this.chats.splice(index, 1)
+      }
+
+      if (this.activeChatId === chatId) {
+        this.activeChatId = null
+      }
+
+      this.chatPartners.delete(chatId)
+      this.savePartners()
+    },
+
+    updateLastMessageFromServer(chatId: string, lastMessage: any) {
+      const chat = this.chats.find(c => c.chatId === chatId)
+      if (!chat) return
+
+      if (lastMessage) {
+        chat.lastMessageId = lastMessage.id
+        chat.lastMessageCiphertext = lastMessage.ciphertext
+        chat.lastMessageTime = lastMessage.createdDate
+      } else {
+        // Сообщений больше нет
+        chat.lastMessageId = null
+        chat.lastMessageCiphertext = null
+        chat.lastMessageTime = null
+      }
+
+      console.log('Updated last message for chat:', chatId, chat)
     },
 
     updateLastMessage(chatId: string, message: any) {

@@ -4,13 +4,60 @@ import { useChatStore } from '@/stores/chat'
 import UserSearch from './UserSearch.vue'
 import UserMenu from './UserMenu.vue'
 import UserProfile from './UserProfile.vue'
+import ContextMenu from './ContextMenu.vue'
+import type { MenuItem } from './ContextMenu.vue'
+import api from '@/api/api'
 
 const chatStore = useChatStore()
 const showProfile = ref(false)
 
+const contextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null)
+const selectedChatId = ref<string | null>(null)
+
 function openChat(chatId: string) {
   chatStore.setActiveChat(chatId)
 }
+
+function onContextMenu(event: MouseEvent, chatId: string) {
+  event.preventDefault()
+  event.stopPropagation()
+  selectedChatId.value = chatId
+  contextMenuRef.value?.show(event.clientX, event.clientY)
+}
+
+function closeContextMenu() {
+  selectedChatId.value = null
+}
+
+async function deleteChat() {
+  if (!selectedChatId.value) return
+
+  if (!confirm('Are you sure you want to delete this chat?')) {
+    closeContextMenu()
+    return
+  }
+
+  const chatId = selectedChatId.value
+
+  try {
+    await api.delete(`/chats/${chatId}`)
+    chatStore.deleteChat(chatId)
+    console.log('Chat deleted successfully:', chatId)
+  } catch (error) {
+    console.error('Failed to delete chat:', error)
+    alert('Failed to delete chat')
+  } finally {
+    closeContextMenu()
+  }
+}
+
+const menuItems: MenuItem[] = [
+  {
+    label: 'Delete chat',
+    action: deleteChat,
+    danger: true
+  }
+]
 
 function formatTime(dateString: string | null) {
   if (!dateString) return ''
@@ -36,13 +83,11 @@ function getChatTitle(chatId: string): string {
 
 <template>
   <div class="sidebar">
-    <!-- HEADER с бургером и поиском -->
     <div class="sidebar-header">
       <UserMenu @open-profile="showProfile = true" />
       <UserSearch />
     </div>
 
-    <!-- LIST -->
     <div class="chat-list">
       <div
         v-for="chat in chatStore.chats"
@@ -50,6 +95,7 @@ function getChatTitle(chatId: string): string {
         class="chat-item"
         :class="{ active: chat.chatId === chatStore.activeChatId }"
         @click="openChat(chat.chatId)"
+        @contextmenu="onContextMenu($event, chat.chatId)"
       >
         <div class="chat-avatar">
           {{ getChatTitle(chat.chatId).split(' ').map(w => w[0]).join('').slice(0, 2) }}
@@ -66,14 +112,19 @@ function getChatTitle(chatId: string): string {
           </div>
 
           <div class="bottom-row">
-            {{ chat.lastMessageCiphertext || 'No messages yet' }}
+            {{ chat.lastMessageCiphertext || (chat.lastMessageId ? 'Message' : 'No messages yet') }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Профиль модалка -->
     <UserProfile :show="showProfile" @close="showProfile = false" />
+
+    <ContextMenu
+      ref="contextMenuRef"
+      :items="menuItems"
+      @close="closeContextMenu"
+    />
   </div>
 </template>
 

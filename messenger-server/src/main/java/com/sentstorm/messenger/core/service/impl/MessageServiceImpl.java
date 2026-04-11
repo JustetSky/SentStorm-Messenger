@@ -184,12 +184,10 @@ public class MessageServiceImpl implements MessageService {
                 ));
 
         User currentUser = currentUserService.getCurrentUser();
+        UUID chatId = message.getChat().getId();
 
         boolean isParticipant = chatParticipantRepository
-                .existsByChatIdAndUserId(
-                        message.getChat().getId(),
-                        currentUser.getId()
-                );
+                .existsByChatIdAndUserId(chatId, currentUser.getId());
 
         if (!isParticipant) {
             throw new ServiceException(
@@ -206,6 +204,10 @@ public class MessageServiceImpl implements MessageService {
         }
 
         messageRepository.delete(message);
+        messagePublisher.sendMessageDeleted(chatId, messageId);
+
+        Message newLastMessage = messageRepository.findFirstByChatIdOrderByCreatedDateDesc(chatId);
+        messagePublisher.sendLastMessageUpdate(chatId, newLastMessage != null ? newLastMessage.getId() : null);
     }
     
 }

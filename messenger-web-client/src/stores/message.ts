@@ -161,26 +161,29 @@ export const useMessageStore = defineStore('message', {
       }
     },
 
-    async markVisibleMessagesAsRead() {
+    async markVisibleMessagesAsRead(messageIds: string[]) {
       const userStore = useUserStore()
       const currentUserId = userStore.profile?.id
 
       if (!currentUserId) return
 
-      // Находим все видимые сообщения от других пользователей
-      const visibleMessages = this.messages.filter(msg =>
-        msg.senderId !== currentUserId &&
-        msg.state !== 'READ'
-      )
-
-      // Отмечаем каждое как прочитанное
-      for (const msg of visibleMessages) {
-        try {
-          await api.patch(`/messages/${msg.id}/read`)
-          msg.state = 'READ'
-        } catch (error) {
-          console.error('Failed to mark as read:', error)
+      for (const msgId of messageIds) {
+        const message = this.messages.find(m => m.id === msgId)
+        if (message && message.senderId !== currentUserId && message.state !== 'READ') {
+          try {
+            await api.patch(`/messages/${msgId}/read`)
+            message.state = 'READ'
+          } catch (error) {
+            console.error('Failed to mark as read:', error)
+          }
         }
+      }
+    },
+
+    deleteMessage(messageId: string) {
+      const index = this.messages.findIndex(m => m.id === messageId)
+      if (index !== -1) {
+        this.messages.splice(index, 1)
       }
     },
 

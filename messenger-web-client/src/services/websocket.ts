@@ -25,10 +25,8 @@ class WebSocketService {
       }
 
       const socket = new SockJS('https://localhost:8443/ws')
-      // @ts-ignore - Stomp добавляется через CDN или глобально
       this.stompClient = window.Stomp.over(socket)
 
-      // Отключаем логирование
       this.stompClient.debug = () => {}
 
       const headers = {
@@ -41,7 +39,6 @@ class WebSocketService {
           console.log('WebSocket connected:', frame)
           this.connected = true
 
-          // Переподписываемся на активный чат, если он есть
           const chatStore = useChatStore()
           if (chatStore.activeChatId) {
             this.subscribeToChat(chatStore.activeChatId)
@@ -76,10 +73,8 @@ class WebSocketService {
       return
     }
 
-    // Отписываемся от предыдущих подписок
     this.unsubscribeFromChat(chatId)
 
-    // Подписываемся на сообщения
     const messageSub = this.stompClient.subscribe(
       `/topic/chats/${chatId}`,
       (message: StompMessage) => {
@@ -92,7 +87,6 @@ class WebSocketService {
       }
     )
 
-    // Подписываемся на статусы сообщений
     const statusSub = this.stompClient.subscribe(
       `/topic/chats/${chatId}/status`,
       (message: StompMessage) => {
@@ -105,13 +99,81 @@ class WebSocketService {
       }
     )
 
+    const deleteSub = this.stompClient.subscribe(
+      `/topic/chats/${chatId}/deleted`,
+      (message: StompMessage) => {
+        try {
+          const data = JSON.parse(message.body)
+          this.handleMessageDeleted(chatId, data)
+        } catch (error) {
+          console.error('Failed to parse delete event:', error)
+        }
+      }
+    )
+
+    const lastMessageSub = this.stompClient.subscribe(
+      `/topic/chats/${chatId}/last-message`,
+      (message: StompMessage) => {
+        try {
+          const data = message.body ? JSON.parse(message.body) : null
+          this.handleLastMessageUpdate(chatId, data)
+        } catch (error) {
+          console.error('Failed to parse last message update:', error)
+        }
+      }
+    )
+
     this.subscriptions.set(`${chatId}-messages`, messageSub)
     this.subscriptions.set(`${chatId}-status`, statusSub)
+    this.subscriptions.set(`${chatId}-deleted`, deleteSub)
+    this.subscriptions.set(`${chatId}-last-message`, lastMessageSub)
+  }
+
+  private handleLastMessageUpdate(chatId: string, data: { lastMessageId: string | null }) {
+    console.log('Last message update received:', data)
+    const chatStore = useChatStore()
+
+    const chat = chatStore.chats.find(c => c.chatId === chatId)
+    if (!chat) return
+
+    if (data.lastMessageId) {
+      chat.lastMessageId = data.lastMessageId
+      // Загружаем текст последнего сообщения
+      this.fetchLastMessageText(chatId, data.lastMessageId)
+    } else {
+      chat.lastMessageId = null
+      chat.lastMessageCiphertext = null
+      chat.lastMessageTime = null
+    }
+  }
+
+  private async fetchLastMessageText(chatId: string, messageId: string) {
+    try {
+      const chatStore = useChatStore()
+      const api = (await import('@/api/api')).default
+      const res = await api.get(`/messages/${messageId}`)
+      const message = res.data
+
+      const chat = chatStore.chats.find(c => c.chatId === chatId)
+      if (chat) {
+        chat.lastMessageCiphertext = message.ciphertext
+        chat.lastMessageTime = message.createdDate
+      }
+    } catch (error) {
+      console.error('Failed to fetch last message text:', error)
+    }
   }
 
   unsubscribeFromChat(chatId: string) {
     const messageSub = this.subscriptions.get(`${chatId}-messages`)
     const statusSub = this.subscriptions.get(`${chatId}-status`)
+    const deleteSub = this.subscriptions.get(`${chatId}-deleted`)
+    const lastMessageSub = this.subscriptions.get(`${chatId}-last-message`)
+
+    if (lastMessageSub) {
+      lastMessageSub.unsubscribe()
+      this.subscriptions.delete(`${chatId}-last-message`)
+    }
 
     if (messageSub) {
       messageSub.unsubscribe()
@@ -122,24 +184,42 @@ class WebSocketService {
       statusSub.unsubscribe()
       this.subscriptions.delete(`${chatId}-status`)
     }
+
+    if (deleteSub) {
+      deleteSub.unsubscribe()
+      this.subscriptions.delete(`${chatId}-deleted`)
+    }
   }
 
   private handleIncomingMessage(chatId: string, message: any) {
     const messageStore = useMessageStore()
     const chatStore = useChatStore()
 
-    // Добавляем сообщение в хранилище, только если мы в этом чате
     if (chatStore.activeChatId === chatId) {
       messageStore.addMessage(message)
     }
 
-    // Обновляем последнее сообщение в списке чатов
     chatStore.updateLastMessage(chatId, message)
   }
 
   private handleMessageStatus(chatId: string, status: any) {
     const messageStore = useMessageStore()
     messageStore.updateMessageStatus(status.messageId, status.status)
+  }
+
+  private handleMessageDeleted(chatId: string, data: { messageId: string }) {
+    console.log('Message deleted event received:', data)
+    const messageStore = useMessageStore()
+    const chatStore = useChatStore()
+
+    const chat = chatStore.chats.find(c => c.chatId === chatId)
+    const wasLastMessage = chat?.lastMessageId === data.messageId
+
+    messageStore.deleteMessage(data.messageId)
+
+    if (wasLastMessage) {
+      console.log('Deleted message was the last one, waiting for update...')
+    }
   }
 
   disconnect() {

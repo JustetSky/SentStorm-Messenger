@@ -91,7 +91,7 @@ function openPartnerProfile() {
 }
 
 function closeChat() {
-  chatStore.setActiveChat('')
+  chatStore.setActiveChat(null)
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -133,7 +133,8 @@ function setupMessageObserver() {
         .filter(id => id)
 
       if (visibleMessages.length > 0) {
-        markVisibleMessagesAsRead(visibleMessages as string[])
+        // Используем метод из messageStore
+        messageStore.markVisibleMessagesAsRead(visibleMessages as string[])
       }
     },
     { threshold: 0.5 }
@@ -144,22 +145,6 @@ function observeMessages() {
   if (!observer) return
   const messageElements = document.querySelectorAll('[data-message-id]')
   messageElements.forEach(el => observer?.observe(el))
-}
-
-async function markVisibleMessagesAsRead(messageIds: string[]) {
-  const currentUserId = userStore.profile?.id
-
-  for (const msgId of messageIds) {
-    const message = messageStore.messages.find(m => m.id === msgId)
-    if (message && message.senderId !== currentUserId && message.state !== 'READ') {
-      try {
-        await api.patch(`/messages/${msgId}/read`)
-        message.state = 'READ'
-      } catch (error) {
-        console.error('Failed to mark as read:', error)
-      }
-    }
-  }
 }
 
 function scrollToBottom() {

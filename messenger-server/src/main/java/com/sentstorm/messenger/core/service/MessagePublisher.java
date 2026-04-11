@@ -1,11 +1,16 @@
 package com.sentstorm.messenger.core.service;
 
+import com.sentstorm.messenger.api.model.message.LastMessageUpdateDto;
+import com.sentstorm.messenger.api.model.message.MessageDeletedDto;
 import com.sentstorm.messenger.api.model.message.MessageDto;
 import com.sentstorm.messenger.api.model.message.MessageStatusDto;
+import com.sentstorm.messenger.core.repository.message.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -25,6 +30,22 @@ public class MessagePublisher {
         messagingTemplate.convertAndSend(
                 "/topic/chats/" + chatId + "/status",
                 dto
+        );
+    }
+
+    public void sendMessageDeleted(UUID chatId, UUID messageId) {
+        MessageDeletedDto payload = new MessageDeletedDto(messageId);
+        messagingTemplate.convertAndSend(
+                "/topic/chats/" + chatId + "/deleted",
+                payload
+        );
+    }
+
+    public void sendLastMessageUpdate(UUID chatId, UUID lastMessageId) {
+        LastMessageUpdateDto payload = new LastMessageUpdateDto(lastMessageId);
+        messagingTemplate.convertAndSend(
+                "/topic/chats/" + chatId + "/last-message",
+                payload
         );
     }
 }
