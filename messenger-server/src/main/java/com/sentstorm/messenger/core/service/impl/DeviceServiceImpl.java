@@ -2,7 +2,6 @@ package com.sentstorm.messenger.core.service.impl;
 
 import com.sentstorm.messenger.api.model.device.DeviceDto;
 import com.sentstorm.messenger.api.model.device.DeviceRegisterRequest;
-import com.sentstorm.messenger.api.model.device.UpdatePushTokenRequest;
 import com.sentstorm.messenger.api.model.device.UserDevicePublicDto;
 import com.sentstorm.messenger.api.mapper.DeviceMapper;
 import com.sentstorm.messenger.core.entity.user.User;
@@ -55,22 +54,6 @@ public class DeviceServiceImpl implements DeviceService {
         device = deviceRepository.save(device);
 
         return deviceMapper.toDto(device);
-    }
-
-    @Override
-    public void updatePushToken(UpdatePushTokenRequest request) {
-
-        User currentUser = currentUserService.getCurrentUser();
-
-        UserDevice device = deviceRepository
-                .findByUserIdAndDeviceId(currentUser.getId(), request.getDeviceId())
-                .orElseThrow(() -> new ServiceException(
-                        ErrorCode.NOT_FOUND,
-                        "Device not found"
-                ));
-
-        device.setPushToken(request.getPushToken());
-        device.setLastActive(Instant.now());
     }
 
     @Override

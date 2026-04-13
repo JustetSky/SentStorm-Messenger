@@ -3,7 +3,6 @@ package com.sentstorm.messenger.api.controller;
 import com.sentstorm.messenger.api.ApiPath;
 import com.sentstorm.messenger.api.model.device.DeviceDto;
 import com.sentstorm.messenger.api.model.device.DeviceRegisterRequest;
-import com.sentstorm.messenger.api.model.device.UpdatePushTokenRequest;
 import com.sentstorm.messenger.core.service.DeviceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,15 +29,6 @@ public class DeviceController {
             @RequestBody @Valid DeviceRegisterRequest request
     ) {
         return ResponseEntity.ok(deviceService.register(request));
-    }
-
-    @PutMapping(ApiPath.PUSH_TOKEN)
-    @Operation(summary = "Update push token")
-    public ResponseEntity<Void> updatePushToken(
-            @RequestBody @Valid UpdatePushTokenRequest request
-    ) {
-        deviceService.updatePushToken(request);
-        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping(ApiPath.DEVICE_ID)
