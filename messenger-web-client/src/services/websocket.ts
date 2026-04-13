@@ -4,6 +4,7 @@ import type { Message as StompMessage } from 'stompjs'
 import keycloak from '@/auth/keycloak'
 import { useMessageStore } from '@/stores/message'
 import { useChatStore } from '@/stores/chat'
+import {cryptoService} from "@/services/crypto.ts";
 
 declare global {
   interface Window {
@@ -138,7 +139,6 @@ class WebSocketService {
 
     if (data.lastMessageId) {
       chat.lastMessageId = data.lastMessageId
-      // Загружаем текст последнего сообщения
       this.fetchLastMessageText(chatId, data.lastMessageId)
     } else {
       chat.lastMessageId = null
@@ -151,12 +151,22 @@ class WebSocketService {
     try {
       const chatStore = useChatStore()
       const api = (await import('@/api/api')).default
+      const { cryptoService } = await import('@/services/crypto')
+
       const res = await api.get(`/messages/${messageId}`)
       const message = res.data
 
       const chat = chatStore.chats.find(c => c.chatId === chatId)
       if (chat) {
-        chat.lastMessageCiphertext = message.ciphertext
+        try {
+          if (message.ciphertext && message.ciphertext.startsWith('{') && message.ciphertext.includes('senderDeviceId')) {
+            chat.lastMessageCiphertext = cryptoService.decryptFromSender(message.ciphertext)
+          } else {
+            chat.lastMessageCiphertext = message.ciphertext
+          }
+        } catch (error) {
+          chat.lastMessageCiphertext = '[Encrypted message]'
+        }
         chat.lastMessageTime = message.createdDate
       }
     } catch (error) {
@@ -192,14 +202,31 @@ class WebSocketService {
   }
 
   private handleIncomingMessage(chatId: string, message: any) {
+    console.log('📨 ========== WEBSOCKET MESSAGE ==========')
+    console.log('📨 Raw message:', message)
+
     const messageStore = useMessageStore()
     const chatStore = useChatStore()
+
+    // Дешифруем сообщение перед добавлением
+    try {
+      if (message.ciphertext && message.ciphertext.startsWith('{') && message.ciphertext.includes('senderDeviceId')) {
+        console.log('🔓 Decrypting WebSocket message...')
+        const decryptedText = cryptoService.decryptFromSender(message.ciphertext)
+        message.ciphertext = decryptedText
+        console.log('✅ WebSocket message decrypted')
+      }
+    } catch (error) {
+      console.error('❌ Failed to decrypt WebSocket message:', error)
+      message.ciphertext = '[Cannot decrypt]'
+    }
 
     if (chatStore.activeChatId === chatId) {
       messageStore.addMessage(message)
     }
 
     chatStore.updateLastMessage(chatId, message)
+    console.log('📨 ========================================')
   }
 
   private handleMessageStatus(chatId: string, status: any) {

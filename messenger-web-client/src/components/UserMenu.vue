@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import keycloak from '@/auth/keycloak'
 import api from '@/api/api'
+import { cryptoService } from '@/services/crypto'
 
 const userStore = useUserStore()
 const showMenu = ref(false)
@@ -31,10 +32,7 @@ function openProfile() {
 }
 
 function logout() {
-  if (statusInterval) clearInterval(statusInterval)
-  keycloak.logout({
-    redirectUri: window.location.origin
-  })
+  keycloak.logout({ redirectUri: window.location.origin })
 }
 
 function handleClickOutside(event: MouseEvent) {
