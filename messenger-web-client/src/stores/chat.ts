@@ -105,11 +105,9 @@ export const useChatStore = defineStore('chat', {
         let decryptedLastMessage: string | null = null
         if (chat.lastMessageCiphertext) {
           try {
-            // Проверяем, зашифровано ли сообщение в формате E2E
             if (chat.lastMessageCiphertext.startsWith('{') && chat.lastMessageCiphertext.includes('senderDeviceId')) {
               decryptedLastMessage = cryptoService.decryptFromSender(chat.lastMessageCiphertext)
             } else {
-              // Старое сообщение или уже plaintext
               decryptedLastMessage = chat.lastMessageCiphertext
             }
           } catch (error) {
@@ -205,6 +203,24 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
+    // ✅ ДОБАВЛЕН МЕТОД setChatPartner
+    setChatPartner(chatId: string, user: any) {
+      this.chatPartners.set(chatId, {
+        id: user.id,
+        publicId: user.publicId,
+        firstName: user.firstName,
+        lastName: user.lastName
+      })
+      this.savePartners()
+
+      const chat = this.chats.find(c => c.chatId === chatId)
+      if (chat) {
+        chat.title = `${user.firstName} ${user.lastName}`
+        chat.partnerId = user.id
+        chat.partnerPublicId = user.publicId
+      }
+    },
+
     setActiveChat(chatId: string | null) {
       this.activeChatId = chatId
     },
@@ -230,7 +246,6 @@ export const useChatStore = defineStore('chat', {
 
       chat.lastMessageId = message.id
 
-      // Дешифруем сообщение перед сохранением
       try {
         if (message.ciphertext && message.ciphertext.startsWith('{') && message.ciphertext.includes('senderDeviceId')) {
           chat.lastMessageCiphertext = cryptoService.decryptFromSender(message.ciphertext)
