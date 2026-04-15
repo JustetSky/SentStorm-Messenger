@@ -11,6 +11,7 @@ SentStorm — это приватный веб-мессенджер для бе�
 - Регистрация и аутентификация пользователей через Keycloak;
 - Поиск пользователей и создание личных диалогов;
 - Обмен текстовыми сообщениями и эмодзи;
+- Отправка изображений без сохранения метаданных
 - Доставка сообщений в реальном времени через WebSocket;
 - Хранение истории переписки;
 - Сквозное (end-to-end) шифрование сообщений на стороне клиента.
@@ -145,19 +146,6 @@ public class Message {
 }
 ```
 
-#### MessageAttachment
-```java
-public class MessageAttachment {
-   private UUID id;
-   private Message message;
-   private String fileName;
-   private String fileType;
-   private Long fileSize;
-   private String fileUrl;
-   private String encryptedKey;
-}
-```
-
 #### User
 ```java
 public class User {
@@ -216,7 +204,7 @@ DELETE /messages/{messageId}              # Удаление сообщения
 
 ### Attachment
 ```
-POST /messages/upload      # Загрузить файл или изображение для отправки в сообщении
+POST /messages/upload      # Загрузить изображение для отправки в сообщении
 ```
 
 ### Device
@@ -309,7 +297,7 @@ npm run preview
 1. Клиент получает публичный ключ получателя;
 2. Сообщение шифруется на клиенте;
 3. Зашифрованное сообщение отправляется на сервер через REST;
-4. Сервер сохраняет ciphertext в базе данных (статус: SENT);
+4. Сервер сохраняет ciphertext в базе данных (SENT);
 5. Сервер доставляет сообщение получателю;
 6. При успешной доставке сервер обновляет статус сообщения (DELIVERED);
 7. Клиент получателя расшифровывает сообщение локально.
