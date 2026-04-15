@@ -18,7 +18,6 @@ import com.sentstorm.messenger.core.repository.message.MessageRepository;
 import com.sentstorm.messenger.core.service.CurrentUserService;
 import com.sentstorm.messenger.core.service.MessagePublisher;
 import com.sentstorm.messenger.core.service.MessageService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,8 +39,6 @@ public class MessageServiceImpl implements MessageService {
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
     private final MessagePublisher messagePublisher;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public PageResponse<MessageDto> getChatMessages(UUID chatId, Pageable pageable) {
@@ -95,7 +92,6 @@ public class MessageServiceImpl implements MessageService {
                 // Оставляем TEXT
             }
         }
-        System.out.println("Message type: " + messageType);
 
         UUID clientMessageId = null;
         if (request.getClientMessageId() != null && !request.getClientMessageId().isEmpty()) {
