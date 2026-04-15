@@ -10,7 +10,6 @@ import jakarta.persistence.*;
 
 import lombok.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -44,12 +43,4 @@ public class Message extends BaseAuditingEntity {
 
     @Enumerated(EnumType.STRING)
     private MessageState state;
-
-    @OneToMany(
-            mappedBy = "message",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    private List<MessageAttachment> attachments;
 }
