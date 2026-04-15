@@ -1,24 +1,21 @@
 package com.sentstorm.messenger.api.model.message;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
 @Getter
 @Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class MessageSendRequest {
-
     @NotNull
     private UUID chatId;
 
-    @NotBlank
+    @NotNull
     private String ciphertext;
 
-    @NotNull
-    private UUID clientMessageId;
+    private String clientMessageId;
+
+    private String type = "TEXT";
 }

@@ -5,12 +5,15 @@ import { watch, nextTick, ref } from 'vue'
 import ContextMenu from './ContextMenu.vue'
 import type { MenuItem } from './ContextMenu.vue'
 import api from '@/api/api'
+import keycloak from '@/auth/keycloak'
 
 const messageStore = useMessageStore()
 const userStore = useUserStore()
 
 const contextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null)
 const selectedMessageId = ref<string | null>(null)
+const showImageViewer = ref(false)
+const currentImage = ref('')
 
 function onBubbleContextMenu(event: MouseEvent, messageId: string) {
   const message = messageStore.messages.find(m => m.id === messageId)
@@ -96,6 +99,69 @@ function formatTime(dateString: string) {
   const date = new Date(dateString)
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
+
+// Проверяем, является ли сообщение изображением
+function isImageMessage(msg: any): boolean {
+  // Проверяем по типу сообщения
+  if (msg.type === 'IMAGE') return true
+
+  // Проверяем по содержимому
+  try {
+    const parsed = JSON.parse(msg.ciphertext)
+    return parsed.type === 'IMAGE'
+  } catch {
+    return false
+  }
+}
+
+// Извлекаем URL изображения из сообщения
+function getImageUrl(msg: any): string | null {
+  try {
+    const parsed = JSON.parse(msg.ciphertext)
+    if (parsed.type === 'IMAGE' && parsed.url) {
+      const url = parsed.url.startsWith('/')
+        ? `https://localhost:8443${parsed.url}`
+        : parsed.url
+      // Берём токен из Keycloak
+      const token = keycloak.token
+      return token ? `${url}?token=${token}` : url
+    }
+  } catch {
+    // ignore
+  }
+  return null
+}
+
+// Извлекаем имя файла
+function getImageName(msg: any): string {
+  try {
+    const parsed = JSON.parse(msg.ciphertext)
+    return parsed.name || 'Image'
+  } catch {
+    return 'Image'
+  }
+}
+
+// Открыть изображение в модальном окне
+function openImage(url: string | null) {
+  if (url) {
+    currentImage.value = url
+    showImageViewer.value = true
+  }
+}
+
+function closeImageViewer() {
+  showImageViewer.value = false
+  currentImage.value = ''  // Очищаем пустой строкой
+}
+
+// Получить текст для отображения (для текстовых сообщений)
+function getDisplayText(msg: any): string {
+  if (isImageMessage(msg)) {
+    return '' // Не показываем текст для изображений
+  }
+  return msg.ciphertext
+}
 </script>
 
 <template>
@@ -111,10 +177,25 @@ function formatTime(dateString: string) {
         <div class="bubble-wrapper">
           <div
             class="bubble"
-            :class="{ 'own-bubble': msg.senderId === userStore.profile?.id }"
+            :class="{
+              'own-bubble': msg.senderId === userStore.profile?.id,
+              'image-bubble': isImageMessage(msg)
+            }"
             @contextmenu="onBubbleContextMenu($event, msg.id)"
           >
-            <div class="message-text">{{ msg.ciphertext }}</div>
+            <!-- Изображение -->
+            <template v-if="isImageMessage(msg)">
+              <img
+                :src="getImageUrl(msg) || ''"
+                :alt="getImageName(msg)"
+                class="message-image"
+                @click="openImage(getImageUrl(msg))"
+              />
+            </template>
+            <!-- Текст -->
+            <template v-else>
+              <div class="message-text">{{ getDisplayText(msg) }}</div>
+            </template>
           </div>
           <div class="message-footer">
             <span class="time">{{ formatTime(msg.createdDate) }}</span>
@@ -136,6 +217,14 @@ function formatTime(dateString: string) {
       :items="menuItems"
       @close="closeContextMenu"
     />
+
+    <!-- Модальное окно для просмотра изображений -->
+    <Teleport to="body">
+      <div v-if="showImageViewer && currentImage" class="image-viewer" @click="closeImageViewer">
+        <img :src="currentImage" @click.stop alt="Full size" />
+        <button class="close-viewer-btn" @click="closeImageViewer">×</button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -200,7 +289,11 @@ function formatTime(dateString: string) {
   user-select: text;
 }
 
-/* Показываем pointer при наведении на свои сообщения */
+.bubble.image-bubble {
+  padding: 4px !important;
+  background: transparent !important;
+}
+
 .bubble.own-bubble {
   cursor: context-menu;
 }
@@ -210,8 +303,21 @@ function formatTime(dateString: string) {
   color: white;
 }
 
+.message-row.mine .bubble.image-bubble {
+  background: transparent !important;
+}
+
 .message-text {
   word-break: break-word;
+}
+
+.message-image {
+  max-width: 300px;
+  max-height: 300px;
+  border-radius: 12px;
+  cursor: pointer;
+  object-fit: cover;
+  display: block;
 }
 
 .message-footer {
@@ -232,5 +338,49 @@ function formatTime(dateString: string) {
   font-size: 12px;
   line-height: 1;
   font-weight: bold;
+}
+
+/* Модальное окно для просмотра изображений */
+.image-viewer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  cursor: zoom-out;
+}
+
+.image-viewer img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  cursor: default;
+}
+
+.close-viewer-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.close-viewer-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 </style>

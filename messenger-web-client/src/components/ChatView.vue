@@ -22,6 +22,10 @@ const partnerInfo = ref<any>(null)
 const showEmojiPicker = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const uploadingImage = ref(false)
+const pendingImage = ref<{ file: File; preview: string; imageId: string } | null>(null)
+
 let observer: IntersectionObserver | null = null
 let statusInterval: number | null = null
 
@@ -121,6 +125,127 @@ function toggleEmojiPicker() {
   showEmojiPicker.value = !showEmojiPicker.value
 }
 
+function triggerImageUpload() {
+  fileInputRef.value?.click()
+}
+
+// Создание миниатюры изображения
+async function createThumbnail(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')!
+
+        const size = 48
+        canvas.width = size
+        canvas.height = size
+
+        const min = Math.min(img.width, img.height)
+        const sx = (img.width - min) / 2
+        const sy = (img.height - min) / 2
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size)
+
+        resolve(canvas.toDataURL('image/jpeg', 0.7))
+      }
+      img.src = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+async function handleImageSelect(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  if (!file.type.startsWith('image/')) {
+    alert('Only images are allowed')
+    return
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    alert('Image size must be less than 10 MB')
+    return
+  }
+
+  const preview = URL.createObjectURL(file)
+  const thumbnail = await createThumbnail(file)
+  const imageId = crypto.randomUUID()
+  localStorage.setItem(`thumb_${imageId}`, thumbnail)
+
+  pendingImage.value = { file, preview, imageId }
+}
+
+function cancelImage() {
+  if (pendingImage.value) {
+    URL.revokeObjectURL(pendingImage.value.preview)
+    if (pendingImage.value.imageId) {
+      localStorage.removeItem(`thumb_${pendingImage.value.imageId}`)
+    }
+    pendingImage.value = null
+  }
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
+
+async function sendImageMessage() {
+  if (!pendingImage.value || !chatStore.activeChatId) return
+
+  uploadingImage.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append('image', pendingImage.value.file)
+
+    const res = await api.post('/messages/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    const { fileUrl, fileName, fileSize } = res.data
+
+    const imageMessage = JSON.stringify({
+      type: 'IMAGE',
+      url: fileUrl,
+      name: fileName,
+      size: fileSize,
+      thumbId: pendingImage.value.imageId
+    })
+
+    await messageStore.sendMessage(chatStore.activeChatId, imageMessage)
+    cancelImage()
+
+  } catch (error) {
+    console.error('Failed to send image:', error)
+    alert('Failed to send image')
+  } finally {
+    uploadingImage.value = false
+  }
+}
+
+async function handlePaste(event: ClipboardEvent) {
+  const items = event.clipboardData?.items
+  if (!items) return
+
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      event.preventDefault()
+      const file = item.getAsFile()
+      if (file) {
+        const preview = URL.createObjectURL(file)
+        const thumbnail = await createThumbnail(file)
+        const imageId = crypto.randomUUID()
+        localStorage.setItem(`thumb_${imageId}`, thumbnail)
+        pendingImage.value = { file, preview, imageId }
+      }
+      break
+    }
+  }
+}
+
 function setupMessageObserver() {
   observer = new IntersectionObserver(
     (entries) => {
@@ -133,7 +258,6 @@ function setupMessageObserver() {
         .filter(id => id)
 
       if (visibleMessages.length > 0) {
-        // Используем метод из messageStore
         messageStore.markVisibleMessagesAsRead(visibleMessages as string[])
       }
     },
@@ -232,6 +356,7 @@ onMounted(async () => {
     setupMessageObserver()
     window.addEventListener('keydown', handleKeyDown)
     document.addEventListener('click', handleClickOutside)
+    document.addEventListener('paste', handlePaste)
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && chatStore.activeChatId) {
@@ -247,11 +372,15 @@ onUnmounted(() => {
   webSocketService.disconnect()
   window.removeEventListener('keydown', handleKeyDown)
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('paste', handlePaste)
   if (observer) {
     observer.disconnect()
   }
   if (statusInterval) {
     clearInterval(statusInterval)
+  }
+  if (pendingImage.value) {
+    URL.revokeObjectURL(pendingImage.value.preview)
   }
 })
 
@@ -296,7 +425,6 @@ watch(
 <template>
   <div class="chat-container">
     <div v-if="chatStore.activeChat" class="chat">
-      <!-- HEADER -->
       <div class="header" @click="openPartnerProfile">
         <div class="header-avatar" :class="{ online: isPartnerOnline }">
           {{ chatTitle.split(' ').map(w => w[0]).join('').slice(0, 2) }}
@@ -311,7 +439,6 @@ watch(
         </button>
       </div>
 
-      <!-- MESSAGES -->
       <div class="messages" @scroll="handleScroll">
         <div v-if="isLoadingMore" class="loading-more">
           Loading...
@@ -319,22 +446,47 @@ watch(
         <MessageList />
       </div>
 
-      <!-- INPUT -->
       <div class="input-wrapper">
         <div class="input-container">
+          <div v-if="pendingImage" class="image-preview">
+            <img :src="pendingImage.preview" alt="Preview" />
+            <div class="image-preview-info">
+              <span>{{ pendingImage.file.name }}</span>
+              <span>{{ (pendingImage.file.size / 1024).toFixed(1) }} KB</span>
+            </div>
+            <button class="cancel-image-btn" @click="cancelImage" :disabled="uploadingImage">×</button>
+            <button class="send-image-btn" @click="sendImageMessage" :disabled="uploadingImage">
+              {{ uploadingImage ? 'Sending...' : 'Send' }}
+            </button>
+          </div>
+
           <div class="input">
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept="image/*"
+              style="display: none"
+              @change="handleImageSelect"
+            />
+
+            <button class="attach-btn" @click="triggerImageUpload" title="Attach image">
+              🖼️
+            </button>
+
             <input
               ref="inputRef"
               v-model="newMessage"
               placeholder="Message"
               @keypress="handleKeyPress"
-              :disabled="isSending"
+              :disabled="isSending || uploadingImage"
             />
+
             <button class="emoji-btn" @click="toggleEmojiPicker" title="Add emoji">
               🙂
             </button>
-            <button class="send-btn" @click="sendMessage" :disabled="isSending || !newMessage.trim()">
-              {{ isSending ? '...' : '➤' }}
+
+            <button class="send-btn" @click="sendMessage" :disabled="isSending || uploadingImage || (!newMessage.trim() && !pendingImage)">
+              {{ isSending || uploadingImage ? '...' : '➤' }}
             </button>
           </div>
 
@@ -502,6 +654,25 @@ watch(
   outline: none;
 }
 
+.attach-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f3f6;
+  color: #6b7280;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.attach-btn:hover {
+  background: #e5e7eb;
+}
+
 .emoji-btn {
   width: 42px;
   height: 42px;
@@ -532,6 +703,77 @@ watch(
 }
 
 .send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.image-preview {
+  position: absolute;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+}
+
+.image-preview img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.image-preview-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #111827;
+}
+
+.image-preview-info span:last-child {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.cancel-image-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f3f6;
+  color: #6b7280;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.cancel-image-btn:hover {
+  background: #e5e7eb;
+}
+
+.send-image-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  background: #3a76f0;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.send-image-btn:hover {
+  background: #2b5ec9;
+}
+
+.send-image-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

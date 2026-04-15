@@ -4,7 +4,7 @@ import type { Message as StompMessage } from 'stompjs'
 import keycloak from '@/auth/keycloak'
 import { useMessageStore } from '@/stores/message'
 import { useChatStore } from '@/stores/chat'
-import {cryptoService} from "@/services/crypto.ts";
+import { cryptoService } from "@/services/crypto.ts"
 
 declare global {
   interface Window {
@@ -131,46 +131,29 @@ class WebSocketService {
   }
 
   private handleLastMessageUpdate(chatId: string, data: { lastMessageId: string | null }) {
-    console.log('Last message update received:', data)
+    console.log('📋 Last message update received from server:', data)
     const chatStore = useChatStore()
+    const messageStore = useMessageStore()
 
     const chat = chatStore.chats.find(c => c.chatId === chatId)
     if (!chat) return
 
     if (data.lastMessageId) {
       chat.lastMessageId = data.lastMessageId
-      this.fetchLastMessageText(chatId, data.lastMessageId)
+
+      // Пытаемся найти сообщение в локальном сторе
+      const localMessage = messageStore.messages.find(m => m.id === data.lastMessageId)
+      if (localMessage) {
+        chat.lastMessageCiphertext = localMessage.ciphertext
+        chat.lastMessageTime = localMessage.createdDate
+        console.log('✅ Updated last message from local store')
+      }
+      // Если нет в сторе — не запрашиваем с сервера (эндпоинта нет)
     } else {
       chat.lastMessageId = null
       chat.lastMessageCiphertext = null
       chat.lastMessageTime = null
-    }
-  }
-
-  private async fetchLastMessageText(chatId: string, messageId: string) {
-    try {
-      const chatStore = useChatStore()
-      const api = (await import('@/api/api')).default
-      const { cryptoService } = await import('@/services/crypto')
-
-      const res = await api.get(`/messages/${messageId}`)
-      const message = res.data
-
-      const chat = chatStore.chats.find(c => c.chatId === chatId)
-      if (chat) {
-        try {
-          if (message.ciphertext && message.ciphertext.startsWith('{') && message.ciphertext.includes('senderDeviceId')) {
-            chat.lastMessageCiphertext = cryptoService.decryptFromSender(message.ciphertext)
-          } else {
-            chat.lastMessageCiphertext = message.ciphertext
-          }
-        } catch (error) {
-          chat.lastMessageCiphertext = '[Encrypted message]'
-        }
-        chat.lastMessageTime = message.createdDate
-      }
-    } catch (error) {
-      console.error('Failed to fetch last message text:', error)
+      console.log('✅ Last message cleared (no messages)')
     }
   }
 
@@ -208,7 +191,6 @@ class WebSocketService {
     const messageStore = useMessageStore()
     const chatStore = useChatStore()
 
-    // Дешифруем сообщение перед добавлением
     try {
       if (message.ciphertext && message.ciphertext.startsWith('{') && message.ciphertext.includes('senderDeviceId')) {
         console.log('🔓 Decrypting WebSocket message...')
@@ -235,7 +217,7 @@ class WebSocketService {
   }
 
   private handleMessageDeleted(chatId: string, data: { messageId: string }) {
-    console.log('Message deleted event received:', data)
+    console.log('🗑️ Message deleted event received:', data)
     const messageStore = useMessageStore()
     const chatStore = useChatStore()
 
@@ -244,8 +226,24 @@ class WebSocketService {
 
     messageStore.deleteMessage(data.messageId)
 
-    if (wasLastMessage) {
-      console.log('Deleted message was the last one, waiting for update...')
+    if (wasLastMessage && chat) {
+      // Берём новое последнее сообщение из локального стора
+      const remainingMessages = messageStore.messages
+      const newLastMessage = remainingMessages.length > 0
+        ? remainingMessages[remainingMessages.length - 1]
+        : null
+
+      if (newLastMessage) {
+        chat.lastMessageId = newLastMessage.id
+        chat.lastMessageCiphertext = newLastMessage.ciphertext
+        chat.lastMessageTime = newLastMessage.createdDate
+        console.log('✅ Updated last message from local store:', newLastMessage.id)
+      } else {
+        chat.lastMessageId = null
+        chat.lastMessageCiphertext = null
+        chat.lastMessageTime = null
+        console.log('✅ No messages left in chat')
+      }
     }
   }
 

@@ -18,6 +18,7 @@ import com.sentstorm.messenger.core.repository.message.MessageRepository;
 import com.sentstorm.messenger.core.service.CurrentUserService;
 import com.sentstorm.messenger.core.service.MessagePublisher;
 import com.sentstorm.messenger.core.service.MessageService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +40,8 @@ public class MessageServiceImpl implements MessageService {
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
     private final MessagePublisher messagePublisher;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public PageResponse<MessageDto> getChatMessages(UUID chatId, Pageable pageable) {
@@ -71,7 +74,6 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public MessageDto sendMessage(MessageSendRequest request) {
-
         User currentUser = currentUserService.getCurrentUser();
 
         boolean isParticipant = chatParticipantRepository
@@ -82,26 +84,44 @@ public class MessageServiceImpl implements MessageService {
         }
 
         Chat chat = chatRepository.findById(request.getChatId())
-                .orElseThrow(() ->
-                        new ServiceException(ErrorCode.NOT_FOUND, "Chat not found")
-                );
+                .orElseThrow(() -> new ServiceException(ErrorCode.NOT_FOUND, "Chat not found"));
+
+        // Определяем тип из запроса
+        MessageType messageType = MessageType.TEXT;
+        if (request.getType() != null) {
+            try {
+                messageType = MessageType.valueOf(request.getType());
+            } catch (IllegalArgumentException e) {
+                // Оставляем TEXT
+            }
+        }
+        System.out.println("Message type: " + messageType);
+
+        UUID clientMessageId = null;
+        if (request.getClientMessageId() != null && !request.getClientMessageId().isEmpty()) {
+            try {
+                clientMessageId = UUID.fromString(request.getClientMessageId());
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        if (clientMessageId == null) {
+            clientMessageId = UUID.randomUUID();
+        }
 
         Message message = Message.builder()
                 .id(UUID.randomUUID())
-                .clientMessageId(request.getClientMessageId())
+                .clientMessageId(clientMessageId)  // ← UUID
                 .chat(chat)
                 .sender(currentUser)
                 .ciphertext(request.getCiphertext())
-                .type(MessageType.TEXT)
+                .type(messageType)
                 .state(MessageState.SENT)
                 .build();
 
         message = messageRepository.save(message);
-
         MessageDto dto = messageMapper.toDto(message);
-
         messagePublisher.sendToChat(chat.getId(), dto);
-        
+
         return dto;
     }
 
@@ -209,5 +229,5 @@ public class MessageServiceImpl implements MessageService {
         Message newLastMessage = messageRepository.findFirstByChatIdOrderByCreatedDateDesc(chatId);
         messagePublisher.sendLastMessageUpdate(chatId, newLastMessage != null ? newLastMessage.getId() : null);
     }
-    
+
 }

@@ -89,7 +89,7 @@ export const useMessageStore = defineStore('message', {
       const messageId = clientMessageId || crypto.randomUUID()
 
       console.log('📤 ========== SENDING MESSAGE ==========')
-      console.log('📝 Plaintext:', plaintext)
+      console.log('📝 Plaintext:', plaintext.substring(0, 100))
       console.log('💬 ChatId:', chatId)
 
       if (!userStore.profile?.id) {
@@ -101,8 +101,6 @@ export const useMessageStore = defineStore('message', {
         throw new Error('Recipient not found')
       }
 
-      console.log('👤 Recipient publicId:', chat.partnerPublicId)
-
       const recipientDevices = await deviceService.getRecipientDevices(chat.partnerPublicId)
       console.log('📱 Recipient devices:', recipientDevices)
 
@@ -113,12 +111,23 @@ export const useMessageStore = defineStore('message', {
 
       const ciphertext = cryptoService.encryptForAllDevices(plaintext, recipientDevices)
 
+      // Определяем тип сообщения
+      let messageType = 'TEXT'
+      try {
+        const parsed = JSON.parse(plaintext)
+        if (parsed.type === 'IMAGE') {
+          messageType = 'IMAGE'
+        }
+      } catch (e) {
+        // Не JSON, оставляем TEXT
+      }
+
       const optimisticMessage: Message = {
         id: `pending-${messageId}`,
         clientMessageId: messageId,
         senderId: userStore.profile.id,
         ciphertext: plaintext,
-        type: 'TEXT',
+        type: messageType,
         state: 'SENDING',
         createdDate: new Date().toISOString()
       }
@@ -130,7 +139,8 @@ export const useMessageStore = defineStore('message', {
         const response = await api.post('/messages', {
           chatId,
           ciphertext,
-          clientMessageId: messageId
+          clientMessageId: messageId,
+          type: messageType  // ← ОТПРАВЛЯЕМ ТИП
         })
 
         const realMessage = response.data

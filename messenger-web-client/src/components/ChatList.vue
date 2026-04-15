@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import UserSearch from './UserSearch.vue'
 import UserMenu from './UserMenu.vue'
@@ -7,12 +7,14 @@ import UserProfile from './UserProfile.vue'
 import ContextMenu from './ContextMenu.vue'
 import type { MenuItem } from './ContextMenu.vue'
 import api from '@/api/api'
+import keycloak from '@/auth/keycloak'
 
 const chatStore = useChatStore()
 const showProfile = ref(false)
 
 const contextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null)
 const selectedChatId = ref<string | null>(null)
+const updateKey = ref(0)
 
 function openChat(chatId: string) {
   chatStore.setActiveChat(chatId)
@@ -79,6 +81,93 @@ function formatTime(dateString: string | null) {
 function getChatTitle(chatId: string): string {
   return chatStore.getChatTitle(chatId)
 }
+
+// Функция для создания миниатюры из URL
+async function createThumbFromUrl(url: string, thumbId: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+
+    // Формируем URL с токеном
+    const fullUrl = url.startsWith('/')
+      ? `https://localhost:8443${url}`
+      : url
+    const token = keycloak.token
+    const urlWithToken = token ? `${fullUrl}?token=${token}` : fullUrl
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')!
+
+      const size = 48
+      canvas.width = size
+      canvas.height = size
+
+      const min = Math.min(img.width, img.height)
+      const sx = (img.width - min) / 2
+      const sy = (img.height - min) / 2
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size)
+
+      const thumbUrl = canvas.toDataURL('image/jpeg', 0.7)
+      localStorage.setItem(`thumb_${thumbId}`, thumbUrl)
+      resolve(thumbUrl)
+    }
+    img.onerror = (e) => {
+      console.error('Failed to load image for thumbnail:', e)
+      resolve(null)
+    }
+    img.src = urlWithToken
+  })
+}
+
+// В formatLastMessage добавить загрузку миниатюры
+function formatLastMessage(text: string | null): { type: 'text' | 'image'; content: string; thumbUrl?: string } {
+  if (!text) return { type: 'text', content: '' }
+
+  try {
+    const parsed = JSON.parse(text)
+    if (parsed.type === 'IMAGE') {
+      let thumbUrl = parsed.thumbId
+        ? localStorage.getItem(`thumb_${parsed.thumbId}`)
+        : null
+
+      // Если миниатюры нет, но есть URL — создаём её асинхронно
+      if (!thumbUrl && parsed.url && parsed.thumbId) {
+        createThumbFromUrl(parsed.url, parsed.thumbId).then(url => {
+          if (url) {
+            // Принудительно обновляем компонент
+            updateKey.value++
+          }
+        })
+      }
+
+      return {
+        type: 'image',
+        content: 'Image',
+        thumbUrl: thumbUrl || undefined
+      }
+    }
+  } catch {
+    // Не JSON
+  }
+
+  return { type: 'text', content: text }
+}
+
+// Принудительное обновление при изменении чатов
+watch(
+  () => chatStore.chats.map(c => ({
+    id: c.chatId,
+    msg: c.lastMessageCiphertext,
+    time: c.lastMessageTime,
+    msgId: c.lastMessageId
+  })),
+  () => {
+    updateKey.value++
+    console.log('ChatList updated, key:', updateKey.value)
+  },
+  { deep: true }
+)
 </script>
 
 <template>
@@ -88,7 +177,7 @@ function getChatTitle(chatId: string): string {
       <UserSearch />
     </div>
 
-    <div class="chat-list">
+    <div class="chat-list" :key="updateKey">
       <div
         v-for="chat in chatStore.chats"
         :key="chat.chatId"
@@ -112,7 +201,17 @@ function getChatTitle(chatId: string): string {
           </div>
 
           <div class="bottom-row">
-            {{ chat.lastMessageCiphertext || (chat.lastMessageId ? 'Message' : 'No messages yet') }}
+            <template v-if="formatLastMessage(chat.lastMessageCiphertext).type === 'image'">
+              <img
+                v-if="formatLastMessage(chat.lastMessageCiphertext).thumbUrl"
+                :src="formatLastMessage(chat.lastMessageCiphertext).thumbUrl"
+                class="last-message-thumb"
+              />
+              <span>{{ formatLastMessage(chat.lastMessageCiphertext).content }}</span>
+            </template>
+            <template v-else>
+              {{ formatLastMessage(chat.lastMessageCiphertext).content || 'No messages yet' }}
+            </template>
           </div>
         </div>
       </div>
@@ -226,5 +325,16 @@ function getChatTitle(chatId: string): string {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.last-message-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 </style>
