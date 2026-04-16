@@ -4,13 +4,10 @@ import com.sentstorm.messenger.api.model.message.LastMessageUpdateDto;
 import com.sentstorm.messenger.api.model.message.MessageDeletedDto;
 import com.sentstorm.messenger.api.model.message.MessageDto;
 import com.sentstorm.messenger.api.model.message.MessageStatusDto;
-import com.sentstorm.messenger.core.repository.message.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
