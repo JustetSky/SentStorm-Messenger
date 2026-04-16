@@ -1,5 +1,6 @@
 package com.sentstorm.messenger.config;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,7 +20,7 @@ import static java.util.stream.Collectors.toSet;
 public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
     @Override
-    public AbstractAuthenticationToken convert(Jwt jwt) {
+    public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
 
         Collection<GrantedAuthority> authorities = Stream.concat(
                 new JwtGrantedAuthoritiesConverter().convert(jwt).stream(),

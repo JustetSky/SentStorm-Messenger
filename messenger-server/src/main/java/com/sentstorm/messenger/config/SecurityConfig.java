@@ -1,8 +1,8 @@
 package com.sentstorm.messenger.config;
 
 import com.sentstorm.messenger.security.filter.UserSynchronizerFilter;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -10,11 +10,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -29,11 +28,11 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowCredentials(true);
-                    config.setAllowedOrigins(Arrays.asList(
+                    config.setAllowedOrigins(List.of(
                             "http://localhost:4200"
                     ));
-                    config.setAllowedHeaders(Arrays.asList("*"));
-                    config.setAllowedMethods(Arrays.asList("*"));
+                    config.setAllowedHeaders(List.of("*"));
+                    config.setAllowedMethods(List.of("*"));
                     return config;
                 }))
                 .csrf(AbstractHttpConfigurer::disable)
@@ -69,8 +68,8 @@ public class SecurityConfig {
         @Override
         protected void doFilterInternal(
                 jakarta.servlet.http.HttpServletRequest request,
-                jakarta.servlet.http.HttpServletResponse response,
-                jakarta.servlet.FilterChain filterChain
+                jakarta.servlet.http.@NonNull HttpServletResponse response,
+                jakarta.servlet.@NonNull FilterChain filterChain
         ) throws java.io.IOException, jakarta.servlet.ServletException {
 
             String token = request.getParameter("token");
