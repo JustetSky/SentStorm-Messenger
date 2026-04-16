@@ -10,14 +10,17 @@ public final class SecurityUtils {
     private SecurityUtils() {}
 
     public static UUID getCurrentUserKeycloakId() {
+        var authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
 
-        JwtAuthenticationToken authentication =
-                (JwtAuthenticationToken) SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
+        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+            var jwt = jwtAuth.getToken();
+            if (jwt != null && jwt.getSubject() != null) {
+                return UUID.fromString(jwt.getSubject());
+            }
+        }
 
-        String sub = authentication.getToken().getSubject();
-
-        return UUID.fromString(sub);
+        throw new IllegalStateException("Unable to extract Keycloak ID from security context");
     }
 }
