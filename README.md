@@ -18,6 +18,64 @@ SentStorm — это приватный веб-мессенджер для бе�
 
 ---
 
+## Интерфейс приложения
+
+### Главный экран (список чатов)
+<div style="text-align: center;">
+  <img 
+    src="docs/main_page.png" 
+    alt="Главный экран со списком чатов"
+    style="max-width: 600px; width: 100%; height: auto;"
+  >
+</div>
+
+### Окно чата
+<div style="text-align: center;">
+  <img 
+    src="docs/chat.png" 
+    alt="Окно чата с перепиской"
+    style="max-width: 600px; width: 100%; height: auto;"
+  >
+</div>
+
+### Меню пользователя
+<div style="text-align: center;">
+  <img 
+    src="docs/user_menu.png" 
+    alt="Выпадающее меню пользователя"
+    style="max-width: 600px; width: 100%; height: auto;"
+  >
+</div>
+
+### Профиль пользователя
+<div style="text-align: center;">
+  <img 
+    src="docs/user_profile.png" 
+    alt="Окно профиля пользователя"
+    style="max-width: 600px; width: 100%; height: auto;"
+  >
+</div>
+
+### Профиль собеседника
+<div style="text-align: center;">
+  <img 
+    src="docs/chat_participant_profile.png" 
+    alt="Окно профиля собеседника"
+    style="max-width: 600px; width: 100%; height: auto;"
+  >
+</div>
+
+### Меню поиска
+<div style="text-align: center;">
+  <img 
+    src="docs/user_search.png" 
+    alt="Окно поиска пользователей"
+    style="max-width: 600px; width: 100%; height: auto;"
+  >
+</div>
+
+---
+
 ## Архитектура системы
 
 ```
@@ -104,7 +162,7 @@ SentStorm — это приватный веб-мессенджер для бе�
 <div style="text-align: center;">
   <img 
     src="docs/erd-diagram.png" 
-    alt="ERD Diagram"
+    alt="ERD-диаграмма"
     style="max-width: 700px; width: 100%; height: auto;"
   >
 </div>
