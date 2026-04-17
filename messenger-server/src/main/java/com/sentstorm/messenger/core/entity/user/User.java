@@ -2,6 +2,7 @@ package com.sentstorm.messenger.core.entity.user;
 
 import com.sentstorm.messenger.core.entity.base.BaseAuditingEntity;
 
+import com.sentstorm.messenger.core.entity.device.UserDevice;
 import jakarta.persistence.*;
 
 import lombok.*;

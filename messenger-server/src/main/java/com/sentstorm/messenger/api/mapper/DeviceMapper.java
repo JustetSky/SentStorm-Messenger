@@ -2,7 +2,7 @@ package com.sentstorm.messenger.api.mapper;
 
 import com.sentstorm.messenger.api.model.device.DeviceDto;
 import com.sentstorm.messenger.api.model.device.UserDevicePublicDto;
-import com.sentstorm.messenger.core.entity.user.UserDevice;
+import com.sentstorm.messenger.core.entity.device.UserDevice;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

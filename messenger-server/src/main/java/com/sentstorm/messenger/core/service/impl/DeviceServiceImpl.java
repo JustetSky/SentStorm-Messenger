@@ -5,7 +5,7 @@ import com.sentstorm.messenger.api.model.device.DeviceRegisterRequest;
 import com.sentstorm.messenger.api.model.device.UserDevicePublicDto;
 import com.sentstorm.messenger.api.mapper.DeviceMapper;
 import com.sentstorm.messenger.core.entity.user.User;
-import com.sentstorm.messenger.core.entity.user.UserDevice;
+import com.sentstorm.messenger.core.entity.device.UserDevice;
 import com.sentstorm.messenger.core.exception.ErrorCode;
 import com.sentstorm.messenger.core.exception.ServiceException;
 import com.sentstorm.messenger.core.repository.device.UserDeviceRepository;

@@ -1,5 +1,6 @@
-package com.sentstorm.messenger.core.entity.user;
+package com.sentstorm.messenger.core.entity.device;
 
+import com.sentstorm.messenger.core.entity.user.User;
 import jakarta.persistence.*;
 
 import lombok.*;
@@ -34,9 +35,6 @@ public class UserDevice {
 
     @Column(name = "last_active")
     private Instant lastActive;
-
-    @Column(name = "push_token")
-    private String pushToken;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
