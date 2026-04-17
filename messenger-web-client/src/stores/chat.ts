@@ -70,8 +70,7 @@ export const useChatStore = defineStore('chat', {
         } else {
           this.chatPartners.clear()
         }
-      } catch (e) {
-        console.error('Failed to load saved partners:', e)
+      } catch {
         this.chatPartners.clear()
       }
     },
@@ -81,8 +80,8 @@ export const useChatStore = defineStore('chat', {
         const key = this.getStorageKey()
         const obj = Object.fromEntries(this.chatPartners)
         localStorage.setItem(key, JSON.stringify(obj))
-      } catch (e) {
-        console.error('Failed to save partners:', e)
+      } catch {
+        // ignore
       }
     },
 
@@ -96,12 +95,10 @@ export const useChatStore = defineStore('chat', {
       this.loadSavedPartners()
 
       const res = await api.get('/chats')
-      console.log('Fetched chats:', res.data)
 
       const chats: Chat[] = await Promise.all(res.data.map(async (chat: any) => {
         const other = chat.otherParticipant
 
-        // Дешифруем последнее сообщение если оно есть
         let decryptedLastMessage: string | null = null
         if (chat.lastMessageCiphertext) {
           try {
@@ -110,8 +107,7 @@ export const useChatStore = defineStore('chat', {
             } else {
               decryptedLastMessage = chat.lastMessageCiphertext
             }
-          } catch (error) {
-            console.error('Failed to decrypt last message for chat', chat.chatId, error)
+          } catch {
             decryptedLastMessage = '[Encrypted message]'
           }
         }
@@ -198,12 +194,10 @@ export const useChatStore = defineStore('chat', {
         this.chats.unshift(chatToAdd)
         return chatToAdd
       } catch (error) {
-        console.error('Failed to create chat:', error)
         throw error
       }
     },
 
-    // ✅ ДОБАВЛЕН МЕТОД setChatPartner
     setChatPartner(chatId: string, user: any) {
       this.chatPartners.set(chatId, {
         id: user.id,
@@ -252,8 +246,7 @@ export const useChatStore = defineStore('chat', {
         } else {
           chat.lastMessageCiphertext = message.ciphertext
         }
-      } catch (error) {
-        console.error('Failed to decrypt last message:', error)
+      } catch {
         chat.lastMessageCiphertext = '[Encrypted message]'
       }
 
@@ -281,7 +274,7 @@ export const useChatStore = defineStore('chat', {
           } else {
             chat.lastMessageCiphertext = lastMessage.ciphertext
           }
-        } catch (error) {
+        } catch {
           chat.lastMessageCiphertext = '[Encrypted message]'
         }
         chat.lastMessageTime = lastMessage.createdDate

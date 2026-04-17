@@ -68,8 +68,8 @@ async function refreshPartnerStatus() {
     partnerInfo.value = freshUser.data
     userStore.userCache.set(freshUser.data.id, freshUser.data)
     userStore.userCache.set(freshUser.data.publicId, freshUser.data)
-  } catch (error) {
-    console.error('Failed to refresh partner status:', error)
+  } catch {
+    // ignore
   }
 }
 
@@ -83,8 +83,8 @@ async function loadPartnerInfo() {
       partnerInfo.value = freshUser.data
       userStore.userCache.set(freshUser.data.id, freshUser.data)
       userStore.userCache.set(freshUser.data.publicId, freshUser.data)
-    } catch (error) {
-      console.error('Failed to load partner info:', error)
+    } catch {
+      // ignore
     }
   }
 }
@@ -129,7 +129,6 @@ function triggerImageUpload() {
   fileInputRef.value?.click()
 }
 
-// Создание миниатюры изображения
 async function createThumbnail(file: File): Promise<string> {
   return new Promise((resolve) => {
     const reader = new FileReader()
@@ -218,8 +217,7 @@ async function sendImageMessage() {
     await messageStore.sendMessage(chatStore.activeChatId, imageMessage)
     cancelImage()
 
-  } catch (error) {
-    console.error('Failed to send image:', error)
+  } catch {
     alert('Failed to send image')
   } finally {
     uploadingImage.value = false
@@ -309,8 +307,8 @@ async function loadMoreMessages() {
         ...messageStore.messages
       ]
     }
-  } catch (error) {
-    console.error('Failed to load more messages:', error)
+  } catch {
+    // ignore
   } finally {
     isLoadingMore.value = false
 
@@ -335,8 +333,7 @@ async function sendMessage() {
 
     await nextTick()
     scrollToBottom()
-  } catch (error) {
-    console.error('Failed to send message:', error)
+  } catch {
     alert('Failed to send message. Please try again.')
   } finally {
     isSending.value = false
@@ -363,8 +360,8 @@ onMounted(async () => {
         refreshPartnerStatus()
       }
     })
-  } catch (error) {
-    console.error('Failed to connect WebSocket:', error)
+  } catch {
+    // ignore
   }
 })
 

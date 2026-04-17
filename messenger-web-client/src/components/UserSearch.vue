@@ -24,8 +24,8 @@ async function performSearch() {
   try {
     searchResults.value = await userStore.searchUsers(searchQuery.value)
     showResults.value = true
-  } catch (error) {
-    console.error('Search failed:', error)
+  } catch {
+    // ignore
   } finally {
     isSearching.value = false
   }
@@ -43,7 +43,6 @@ function onSearchInput() {
 }
 
 async function startChat(user: User) {
-  // Запрещаем создание чата с самим собой
   if (userStore.profile && user.publicId === userStore.profile.publicId) {
     return
   }
@@ -56,8 +55,8 @@ async function startChat(user: User) {
     searchQuery.value = ''
     searchResults.value = []
     showResults.value = false
-  } catch (error) {
-    console.error('Failed to open chat:', error)
+  } catch {
+    // ignore
   }
 }
 

@@ -44,9 +44,7 @@ async function deleteChat() {
   try {
     await api.delete(`/chats/${chatId}`)
     chatStore.deleteChat(chatId)
-    console.log('Chat deleted successfully:', chatId)
   } catch (error) {
-    console.error('Failed to delete chat:', error)
     alert('Failed to delete chat')
   } finally {
     closeContextMenu()
@@ -82,13 +80,11 @@ function getChatTitle(chatId: string): string {
   return chatStore.getChatTitle(chatId)
 }
 
-// Функция для создания миниатюры из URL
 async function createThumbFromUrl(url: string, thumbId: string): Promise<string | null> {
   return new Promise((resolve) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
 
-    // Формируем URL с токеном
     const fullUrl = url.startsWith('/')
       ? `https://localhost:8443${url}`
       : url
@@ -112,15 +108,13 @@ async function createThumbFromUrl(url: string, thumbId: string): Promise<string 
       localStorage.setItem(`thumb_${thumbId}`, thumbUrl)
       resolve(thumbUrl)
     }
-    img.onerror = (e) => {
-      console.error('Failed to load image for thumbnail:', e)
+    img.onerror = () => {
       resolve(null)
     }
     img.src = urlWithToken
   })
 }
 
-// В formatLastMessage добавить загрузку миниатюры
 function formatLastMessage(text: string | null): { type: 'text' | 'image'; content: string; thumbUrl?: string } {
   if (!text) return { type: 'text', content: '' }
 
@@ -131,11 +125,9 @@ function formatLastMessage(text: string | null): { type: 'text' | 'image'; conte
         ? localStorage.getItem(`thumb_${parsed.thumbId}`)
         : null
 
-      // Если миниатюры нет, но есть URL — создаём её асинхронно
       if (!thumbUrl && parsed.url && parsed.thumbId) {
         createThumbFromUrl(parsed.url, parsed.thumbId).then(url => {
           if (url) {
-            // Принудительно обновляем компонент
             updateKey.value++
           }
         })
@@ -154,7 +146,6 @@ function formatLastMessage(text: string | null): { type: 'text' | 'image'; conte
   return { type: 'text', content: text }
 }
 
-// Принудительное обновление при изменении чатов
 watch(
   () => chatStore.chats.map(c => ({
     id: c.chatId,
@@ -164,7 +155,6 @@ watch(
   })),
   () => {
     updateKey.value++
-    console.log('ChatList updated, key:', updateKey.value)
   },
   { deep: true }
 )

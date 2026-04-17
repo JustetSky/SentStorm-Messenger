@@ -34,10 +34,8 @@ function formatLastSeen(lastSeen: string | undefined): string {
   const now = new Date()
   const diffSeconds = (now.getTime() - date.getTime()) / 1000
 
-  // Для себя всегда показываем Online
   if (!props.user) return 'Online'
 
-  // Для других пользователей
   if (diffSeconds < 60) return 'Online'
   if (diffSeconds < 3600) return `Last seen ${Math.floor(diffSeconds / 60)} min ago`
   if (diffSeconds < 86400) return `Last seen today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`

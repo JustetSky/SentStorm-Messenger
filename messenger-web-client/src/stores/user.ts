@@ -40,13 +40,9 @@ export const useUserStore = defineStore('user', {
     async searchUsers(query: string): Promise<User[]> {
       if (!query.trim()) return []
 
-      console.log('Searching for:', query)
-
       const res = await api.get('/users/search', {
         params: { query: query }
       })
-
-      console.log('Search response:', res.data)
 
       let users = []
       if (Array.isArray(res.data)) {

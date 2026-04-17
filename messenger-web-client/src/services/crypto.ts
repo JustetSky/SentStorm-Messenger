@@ -24,10 +24,8 @@ class CryptoService {
   private keyPair: KeyPair | null = null
   private deviceId: string | null = null
 
-  // Открываем базу с ЛЮБОЙ версией
   private async openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      // Открываем без указания версии - берём существующую
       const request = indexedDB.open(DB_NAME)
 
       request.onerror = () => reject(request.error)
@@ -36,15 +34,12 @@ class CryptoService {
         const db = (event.target as IDBOpenDBRequest).result
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME)
-          console.log('📦 Object store created')
         }
       }
 
       request.onsuccess = () => {
         const db = request.result
-        // Проверяем, есть ли хранилище
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-          // Закрываем и переоткрываем с новой версией
           db.close()
           const upgradeRequest = indexedDB.open(DB_NAME, (db.version || 0) + 1)
 
@@ -77,9 +72,6 @@ class CryptoService {
     if (!deviceId) {
       deviceId = crypto.randomUUID()
       localStorage.setItem('deviceId', deviceId)
-      console.log('🔑 Generated new deviceId:', deviceId)
-    } else {
-      console.log('🔑 Loaded existing deviceId:', deviceId)
     }
     this.deviceId = deviceId
     return deviceId
@@ -87,7 +79,6 @@ class CryptoService {
 
   async saveKeys(keyPair: KeyPair): Promise<void> {
     this.keyPair = keyPair
-    console.log('💾 Saving keys to IndexedDB...')
 
     const db = await this.openDB()
 
@@ -99,7 +90,6 @@ class CryptoService {
       store.put(keyPair.publicKey, 'publicKey')
 
       transaction.oncomplete = () => {
-        console.log('✅ Keys saved to IndexedDB')
         db.close()
         resolve()
       }
@@ -115,8 +105,6 @@ class CryptoService {
     if (this.keyPair) {
       return this.keyPair
     }
-
-    console.log('🔍 Loading keys from IndexedDB...')
 
     try {
       const db = await this.openDB()
@@ -138,10 +126,8 @@ class CryptoService {
           db.close()
           if (privateKey && publicKey) {
             this.keyPair = { privateKey, publicKey }
-            console.log('✅ Keys loaded from IndexedDB')
             resolve(this.keyPair)
           } else {
-            console.log('❌ No keys in IndexedDB')
             resolve(null)
           }
         }
@@ -151,8 +137,7 @@ class CryptoService {
           reject(transaction.error)
         }
       })
-    } catch (error) {
-      console.error('❌ Failed to load keys:', error)
+    } catch {
       return null
     }
   }
@@ -160,7 +145,6 @@ class CryptoService {
   async getOrCreateKeys(): Promise<KeyPair> {
     let keys = await this.loadKeys()
     if (!keys) {
-      console.log('🔨 No keys, generating new pair...')
       keys = this.generateKeyPair()
       await this.saveKeys(keys)
     }
@@ -228,13 +212,17 @@ class CryptoService {
     if (myDeviceId && encryptedForDevices[myDeviceId]) {
       try {
         return this.decryptMessage(encryptedForDevices[myDeviceId], payload.senderPublicKey)
-      } catch (e) {}
+      } catch {
+        // ignore
+      }
     }
 
     for (const encrypted of Object.values(encryptedForDevices)) {
       try {
         return this.decryptMessage(encrypted, payload.senderPublicKey)
-      } catch (e) {}
+      } catch {
+        // ignore
+      }
     }
 
     throw new Error('Cannot decrypt message')
@@ -247,10 +235,9 @@ class CryptoService {
       const transaction = db.transaction(STORE_NAME, 'readwrite')
       const store = transaction.objectStore(STORE_NAME)
       store.clear()
-      console.log('✅ Keys cleared')
       db.close()
-    } catch (error) {
-      console.error('❌ Failed to clear keys:', error)
+    } catch {
+      // ignore
     }
   }
 

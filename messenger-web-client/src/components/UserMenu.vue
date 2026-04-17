@@ -3,22 +3,18 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import keycloak from '@/auth/keycloak'
 import api from '@/api/api'
-import { cryptoService } from '@/services/crypto'
 
 const userStore = useUserStore()
 const showMenu = ref(false)
-const currentStatus = ref('')
 
 let statusInterval: number | null = null
 
-// Функция отправки пинга для обновления lastSeen
 async function pingOnline() {
   try {
-    // Отправляем легкий запрос для обновления lastSeen на сервере
     await api.get('/users/me')
-    await userStore.fetchMe() // Обновляем данные профиля
-  } catch (error) {
-    console.error('Failed to ping:', error)
+    await userStore.fetchMe()
+  } catch {
+    // ignore
   }
 }
 
@@ -43,25 +39,20 @@ function handleClickOutside(event: MouseEvent) {
 }
 
 const isOnline = computed(() => {
-  // Всегда показываем себя как онлайн
   return true
 })
 
-function formatLastSeen(lastSeen: string | undefined): string {
-  // Для себя всегда показываем "Online"
+function formatLastSeen(): string {
   return 'Online'
 }
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 
-  // Пингуем сразу
   pingOnline()
 
-  // Пингуем каждые 30 секунд для поддержания онлайн статуса
   statusInterval = window.setInterval(pingOnline, 30000)
 
-  // Пингуем при возвращении на вкладку
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       pingOnline()

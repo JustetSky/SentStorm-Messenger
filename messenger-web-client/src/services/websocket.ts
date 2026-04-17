@@ -36,8 +36,7 @@ class WebSocketService {
 
       this.stompClient.connect(
         headers,
-        (frame: Frame) => {
-          console.log('WebSocket connected:', frame)
+        () => {
           this.connected = true
 
           const chatStore = useChatStore()
@@ -47,11 +46,10 @@ class WebSocketService {
 
           resolve()
         },
-        (error: any) => {
-          console.error('WebSocket connection error:', error)
+        () => {
           this.connected = false
           this.scheduleReconnect()
-          reject(error)
+          reject(new Error('WebSocket connection failed'))
         }
       )
     })
@@ -63,14 +61,12 @@ class WebSocketService {
     }
 
     this.reconnectTimer = window.setTimeout(() => {
-      console.log('Attempting to reconnect WebSocket...')
-      this.connect().catch(console.error)
+      this.connect().catch(() => {})
     }, 5000)
   }
 
   subscribeToChat(chatId: string) {
     if (!this.stompClient?.connected) {
-      console.warn('WebSocket not connected, cannot subscribe to chat')
       return
     }
 
@@ -82,8 +78,8 @@ class WebSocketService {
         try {
           const data = JSON.parse(message.body)
           this.handleIncomingMessage(chatId, data)
-        } catch (error) {
-          console.error('Failed to parse message:', error)
+        } catch {
+          // ignore
         }
       }
     )
@@ -94,8 +90,8 @@ class WebSocketService {
         try {
           const data = JSON.parse(message.body)
           this.handleMessageStatus(chatId, data)
-        } catch (error) {
-          console.error('Failed to parse status:', error)
+        } catch {
+          // ignore
         }
       }
     )
@@ -106,8 +102,8 @@ class WebSocketService {
         try {
           const data = JSON.parse(message.body)
           this.handleMessageDeleted(chatId, data)
-        } catch (error) {
-          console.error('Failed to parse delete event:', error)
+        } catch {
+          // ignore
         }
       }
     )
@@ -118,8 +114,8 @@ class WebSocketService {
         try {
           const data = message.body ? JSON.parse(message.body) : null
           this.handleLastMessageUpdate(chatId, data)
-        } catch (error) {
-          console.error('Failed to parse last message update:', error)
+        } catch {
+          // ignore
         }
       }
     )
@@ -131,7 +127,6 @@ class WebSocketService {
   }
 
   private handleLastMessageUpdate(chatId: string, data: { lastMessageId: string | null }) {
-    console.log('📋 Last message update received from server:', data)
     const chatStore = useChatStore()
     const messageStore = useMessageStore()
 
@@ -141,19 +136,15 @@ class WebSocketService {
     if (data.lastMessageId) {
       chat.lastMessageId = data.lastMessageId
 
-      // Пытаемся найти сообщение в локальном сторе
       const localMessage = messageStore.messages.find(m => m.id === data.lastMessageId)
       if (localMessage) {
         chat.lastMessageCiphertext = localMessage.ciphertext
         chat.lastMessageTime = localMessage.createdDate
-        console.log('✅ Updated last message from local store')
       }
-      // Если нет в сторе — не запрашиваем с сервера (эндпоинта нет)
     } else {
       chat.lastMessageId = null
       chat.lastMessageCiphertext = null
       chat.lastMessageTime = null
-      console.log('✅ Last message cleared (no messages)')
     }
   }
 
@@ -185,21 +176,15 @@ class WebSocketService {
   }
 
   private handleIncomingMessage(chatId: string, message: any) {
-    console.log('📨 ========== WEBSOCKET MESSAGE ==========')
-    console.log('📨 Raw message:', message)
-
     const messageStore = useMessageStore()
     const chatStore = useChatStore()
 
     try {
       if (message.ciphertext && message.ciphertext.startsWith('{') && message.ciphertext.includes('senderDeviceId')) {
-        console.log('🔓 Decrypting WebSocket message...')
         const decryptedText = cryptoService.decryptFromSender(message.ciphertext)
         message.ciphertext = decryptedText
-        console.log('✅ WebSocket message decrypted')
       }
-    } catch (error) {
-      console.error('❌ Failed to decrypt WebSocket message:', error)
+    } catch {
       message.ciphertext = '[Cannot decrypt]'
     }
 
@@ -208,16 +193,14 @@ class WebSocketService {
     }
 
     chatStore.updateLastMessage(chatId, message)
-    console.log('📨 ========================================')
   }
 
-  private handleMessageStatus(chatId: string, status: any) {
+  private handleMessageStatus(_chatId: string, status: any) {
     const messageStore = useMessageStore()
     messageStore.updateMessageStatus(status.messageId, status.status)
   }
 
   private handleMessageDeleted(chatId: string, data: { messageId: string }) {
-    console.log('🗑️ Message deleted event received:', data)
     const messageStore = useMessageStore()
     const chatStore = useChatStore()
 
@@ -227,7 +210,6 @@ class WebSocketService {
     messageStore.deleteMessage(data.messageId)
 
     if (wasLastMessage && chat) {
-      // Берём новое последнее сообщение из локального стора
       const remainingMessages = messageStore.messages
       const newLastMessage = remainingMessages.length > 0
         ? remainingMessages[remainingMessages.length - 1]
@@ -237,12 +219,10 @@ class WebSocketService {
         chat.lastMessageId = newLastMessage.id
         chat.lastMessageCiphertext = newLastMessage.ciphertext
         chat.lastMessageTime = newLastMessage.createdDate
-        console.log('✅ Updated last message from local store:', newLastMessage.id)
       } else {
         chat.lastMessageId = null
         chat.lastMessageCiphertext = null
         chat.lastMessageTime = null
-        console.log('✅ No messages left in chat')
       }
     }
   }
@@ -250,7 +230,6 @@ class WebSocketService {
   disconnect() {
     if (this.stompClient?.connected) {
       this.stompClient.disconnect(() => {
-        console.log('WebSocket disconnected')
         this.connected = false
       })
     }

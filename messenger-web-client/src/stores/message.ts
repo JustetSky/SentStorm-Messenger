@@ -26,23 +26,18 @@ export const useMessageStore = defineStore('message', {
   actions: {
     async fetchMessages(chatId: string) {
       this.loading = true
-      console.log('📥 Fetching messages for chat:', chatId)
 
       try {
         const res = await api.get(`/chats/${chatId}/messages?page=0&size=50`)
-        console.log(`📥 Received ${res.data.items.length} messages`)
 
         const messages = await Promise.all(res.data.items.map(async (msg: Message) => {
           try {
             if (msg.ciphertext && msg.ciphertext.startsWith('{') && msg.ciphertext.includes('senderDeviceId')) {
-              console.log(`🔓 Decrypting message ${msg.id}...`)
               const decryptedText = cryptoService.decryptFromSender(msg.ciphertext)
               return { ...msg, ciphertext: decryptedText }
             }
-            console.log(`📝 Message ${msg.id} is plaintext or old format`)
             return msg
-          } catch (error) {
-            console.error(`❌ Failed to decrypt message ${msg.id}:`, error)
+          } catch {
             return { ...msg, ciphertext: '[Cannot decrypt]' }
           }
         }))
@@ -57,7 +52,7 @@ export const useMessageStore = defineStore('message', {
       }
     },
 
-    async markMessagesAsRead(chatId: string) {
+    async markMessagesAsRead(_chatId: string) {
       const userStore = useUserStore()
       const currentUserId = userStore.profile?.id
 
@@ -77,8 +72,8 @@ export const useMessageStore = defineStore('message', {
 
           await api.patch(`/messages/${msg.id}/read`)
           msg.state = 'READ'
-        } catch (error) {
-          console.error('Failed to mark message as read:', error)
+        } catch {
+          // ignore
         }
       }
     },
@@ -87,10 +82,6 @@ export const useMessageStore = defineStore('message', {
       const userStore = useUserStore()
       const chatStore = useChatStore()
       const messageId = clientMessageId || crypto.randomUUID()
-
-      console.log('📤 ========== SENDING MESSAGE ==========')
-      console.log('📝 Plaintext:', plaintext.substring(0, 100))
-      console.log('💬 ChatId:', chatId)
 
       if (!userStore.profile?.id) {
         throw new Error('User profile not loaded')
@@ -102,24 +93,21 @@ export const useMessageStore = defineStore('message', {
       }
 
       const recipientDevices = await deviceService.getRecipientDevices(chat.partnerPublicId)
-      console.log('📱 Recipient devices:', recipientDevices)
 
       if (!recipientDevices || recipientDevices.length === 0) {
-        console.error('❌ Recipient has no active devices')
         throw new Error('Recipient has no active devices')
       }
 
       const ciphertext = cryptoService.encryptForAllDevices(plaintext, recipientDevices)
 
-      // Определяем тип сообщения
       let messageType = 'TEXT'
       try {
         const parsed = JSON.parse(plaintext)
         if (parsed.type === 'IMAGE') {
           messageType = 'IMAGE'
         }
-      } catch (e) {
-        // Не JSON, оставляем TEXT
+      } catch {
+        // ignore
       }
 
       const optimisticMessage: Message = {
@@ -140,14 +128,12 @@ export const useMessageStore = defineStore('message', {
           chatId,
           ciphertext,
           clientMessageId: messageId,
-          type: messageType  // ← ОТПРАВЛЯЕМ ТИП
+          type: messageType
         })
 
         const realMessage = response.data
-        console.log('✅ Message saved on server:', realMessage.id)
 
         const decryptedText = cryptoService.decryptFromSender(realMessage.ciphertext)
-        console.log('✅ Message decrypted for display')
 
         const index = this.messages.findIndex(m => m.clientMessageId === messageId)
         if (index !== -1) {
@@ -159,10 +145,8 @@ export const useMessageStore = defineStore('message', {
         }
 
         this.pendingMessages.delete(messageId)
-        console.log('📤 ========================================')
         return realMessage
       } catch (error) {
-        console.error('❌ Failed to send message:', error)
         const index = this.messages.findIndex(m => m.clientMessageId === messageId)
         if (index !== -1) {
           this.messages[index] = {
@@ -172,16 +156,12 @@ export const useMessageStore = defineStore('message', {
         }
 
         this.pendingMessages.delete(messageId)
-        console.log('📤 ========================================')
         throw error
       }
     },
 
     addMessage(message: Message) {
       const userStore = useUserStore()
-
-      console.log('📨 ========== RECEIVING MESSAGE ==========')
-      console.log('📨 Message ID:', message.id)
 
       const exists = this.messages.some(m =>
         m.id === message.id ||
@@ -191,15 +171,10 @@ export const useMessageStore = defineStore('message', {
       if (!exists) {
         try {
           if (message.ciphertext && message.ciphertext.startsWith('{') && message.ciphertext.includes('senderDeviceId')) {
-            console.log('🔓 Decrypting received message...')
             const decryptedText = cryptoService.decryptFromSender(message.ciphertext)
             message.ciphertext = decryptedText
-            console.log('✅ Message decrypted')
-          } else {
-            console.log('📝 Message is plaintext or old format')
           }
-        } catch (error) {
-          console.error('❌ Failed to decrypt received message:', error)
+        } catch {
           message.ciphertext = '[Cannot decrypt]'
         }
 
@@ -211,9 +186,6 @@ export const useMessageStore = defineStore('message', {
         if (message.senderId !== userStore.profile?.id) {
           this.markMessageAsDelivered(message.id)
         }
-        console.log('📨 ========================================')
-      } else {
-        console.log('⚠️ Message already exists, skipping')
       }
     },
 
@@ -224,8 +196,8 @@ export const useMessageStore = defineStore('message', {
         if (message && message.state === 'SENT') {
           message.state = 'DELIVERED'
         }
-      } catch (error) {
-        console.error('Failed to mark as delivered:', error)
+      } catch {
+        // ignore
       }
     },
 
@@ -241,8 +213,8 @@ export const useMessageStore = defineStore('message', {
           try {
             await api.patch(`/messages/${msgId}/read`)
             message.state = 'READ'
-          } catch (error) {
-            console.error('Failed to mark as read:', error)
+          } catch {
+            // ignore
           }
         }
       }
@@ -252,14 +224,12 @@ export const useMessageStore = defineStore('message', {
       const index = this.messages.findIndex(m => m.id === messageId)
       if (index !== -1) {
         this.messages.splice(index, 1)
-        console.log('🗑️ Message deleted:', messageId)
       }
     },
 
     updateMessageStatus(messageId: string, status: string) {
       const message = this.messages.find(m => m.id === messageId)
       if (message) {
-        console.log(`📊 Message ${messageId} status: ${message.state} -> ${status}`)
         message.state = status
       }
     },
