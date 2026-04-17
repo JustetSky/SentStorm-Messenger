@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMessageStore } from '@/stores/message'
 import { useUserStore } from '@/stores/user'
-import { watch, nextTick, ref } from 'vue'
+import { watch, nextTick, ref, computed } from 'vue'
 import ContextMenu from './ContextMenu.vue'
 import type { MenuItem } from './ContextMenu.vue'
 import api from '@/api/api'
@@ -15,10 +15,55 @@ const selectedMessageId = ref<string | null>(null)
 const showImageViewer = ref(false)
 const currentImage = ref('')
 
+interface GroupedMessage {
+  dateLabel: string
+  messages: any[]
+}
+
+const groupedMessages = computed(() => {
+  const groups: GroupedMessage[] = []
+  let currentDate = ''
+  let currentGroup: any[] = []
+
+  for (const msg of messageStore.messages) {
+    const msgDate = new Date(msg.createdDate)
+    const dateKey = formatDateLabel(msgDate)
+
+    if (dateKey !== currentDate) {
+      if (currentGroup.length > 0) {
+        groups.push({
+          dateLabel: currentDate,
+          messages: [...currentGroup]
+        })
+      }
+      currentDate = dateKey
+      currentGroup = [msg]
+    } else {
+      currentGroup.push(msg)
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    groups.push({
+      dateLabel: currentDate,
+      messages: [...currentGroup]
+    })
+  }
+
+  return groups
+})
+
+function formatDateLabel(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: new Date().getFullYear() !== date.getFullYear() ? 'numeric' : undefined
+  })
+}
+
 function onBubbleContextMenu(event: MouseEvent, messageId: string) {
   const message = messageStore.messages.find(m => m.id === messageId)
 
-  // Можно удалять только свои сообщения
   if (message?.senderId !== userStore.profile?.id) {
     return
   }
@@ -41,9 +86,7 @@ async function deleteMessage() {
   try {
     await api.delete(`/messages/${messageId}`)
     messageStore.deleteMessage(messageId)
-    console.log('Message deleted successfully:', messageId)
   } catch (error) {
-    console.error('Failed to delete message:', error)
     alert('Failed to delete message')
   } finally {
     closeContextMenu()
@@ -100,12 +143,9 @@ function formatTime(dateString: string) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-// Проверяем, является ли сообщение изображением
 function isImageMessage(msg: any): boolean {
-  // Проверяем по типу сообщения
   if (msg.type === 'IMAGE') return true
 
-  // Проверяем по содержимому
   try {
     const parsed = JSON.parse(msg.ciphertext)
     return parsed.type === 'IMAGE'
@@ -114,7 +154,6 @@ function isImageMessage(msg: any): boolean {
   }
 }
 
-// Извлекаем URL изображения из сообщения
 function getImageUrl(msg: any): string | null {
   try {
     const parsed = JSON.parse(msg.ciphertext)
@@ -122,7 +161,6 @@ function getImageUrl(msg: any): string | null {
       const url = parsed.url.startsWith('/')
         ? `https://localhost:8443${parsed.url}`
         : parsed.url
-      // Берём токен из Keycloak
       const token = keycloak.token
       return token ? `${url}?token=${token}` : url
     }
@@ -132,7 +170,6 @@ function getImageUrl(msg: any): string | null {
   return null
 }
 
-// Извлекаем имя файла
 function getImageName(msg: any): string {
   try {
     const parsed = JSON.parse(msg.ciphertext)
@@ -142,7 +179,6 @@ function getImageName(msg: any): string {
   }
 }
 
-// Открыть изображение в модальном окне
 function openImage(url: string | null) {
   if (url) {
     currentImage.value = url
@@ -152,13 +188,12 @@ function openImage(url: string | null) {
 
 function closeImageViewer() {
   showImageViewer.value = false
-  currentImage.value = ''  // Очищаем пустой строкой
+  currentImage.value = ''
 }
 
-// Получить текст для отображения (для текстовых сообщений)
 function getDisplayText(msg: any): string {
   if (isImageMessage(msg)) {
-    return '' // Не показываем текст для изображений
+    return ''
   }
   return msg.ciphertext
 }
@@ -167,48 +202,52 @@ function getDisplayText(msg: any): string {
 <template>
   <div class="messages-list">
     <div class="messages-inner">
-      <div
-        v-for="msg in messageStore.messages"
-        :key="msg.id"
-        :data-message-id="msg.id"
-        class="message-row"
-        :class="{ mine: msg.senderId === userStore.profile?.id }"
-      >
-        <div class="bubble-wrapper">
-          <div
-            class="bubble"
-            :class="{
-              'own-bubble': msg.senderId === userStore.profile?.id,
-              'image-bubble': isImageMessage(msg)
-            }"
-            @contextmenu="onBubbleContextMenu($event, msg.id)"
-          >
-            <!-- Изображение -->
-            <template v-if="isImageMessage(msg)">
-              <img
-                :src="getImageUrl(msg) || ''"
-                :alt="getImageName(msg)"
-                class="message-image"
-                @click="openImage(getImageUrl(msg))"
-              />
-            </template>
-            <!-- Текст -->
-            <template v-else>
-              <div class="message-text">{{ getDisplayText(msg) }}</div>
-            </template>
-          </div>
-          <div class="message-footer">
-            <span class="time">{{ formatTime(msg.createdDate) }}</span>
-            <span
-              v-if="msg.senderId === userStore.profile?.id"
-              class="status"
-              :style="{ color: getStatusColor(msg.state) }"
+      <template v-for="group in groupedMessages" :key="group.dateLabel">
+        <div class="date-separator">
+          <span>{{ group.dateLabel }}</span>
+        </div>
+
+        <div
+          v-for="msg in group.messages"
+          :key="msg.id"
+          :data-message-id="msg.id"
+          class="message-row"
+          :class="{ mine: msg.senderId === userStore.profile?.id }"
+        >
+          <div class="bubble-wrapper">
+            <div
+              class="bubble"
+              :class="{
+                'own-bubble': msg.senderId === userStore.profile?.id,
+                'image-bubble': isImageMessage(msg)
+              }"
+              @contextmenu="onBubbleContextMenu($event, msg.id)"
             >
-              {{ getStatusIcon(msg.state) }}
-            </span>
+              <template v-if="isImageMessage(msg)">
+                <img
+                  :src="getImageUrl(msg) || ''"
+                  :alt="getImageName(msg)"
+                  class="message-image"
+                  @click="openImage(getImageUrl(msg))"
+                />
+              </template>
+              <template v-else>
+                <div class="message-text">{{ getDisplayText(msg) }}</div>
+              </template>
+            </div>
+            <div class="message-footer">
+              <span class="time">{{ formatTime(msg.createdDate) }}</span>
+              <span
+                v-if="msg.senderId === userStore.profile?.id"
+                class="status"
+                :style="{ color: getStatusColor(msg.state) }"
+              >
+                {{ getStatusIcon(msg.state) }}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
       <div class="bottom-spacer"></div>
     </div>
 
@@ -218,7 +257,6 @@ function getDisplayText(msg: any): string {
       @close="closeContextMenu"
     />
 
-    <!-- Модальное окно для просмотра изображений -->
     <Teleport to="body">
       <div v-if="showImageViewer && currentImage" class="image-viewer" @click="closeImageViewer">
         <img :src="currentImage" @click.stop alt="Full size" />
@@ -241,6 +279,22 @@ function getDisplayText(msg: any): string {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.date-separator {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 8px 0;
+}
+
+.date-separator span {
+  background: rgba(0, 0, 0, 0.06);
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 16px;
+  text-transform: capitalize;
 }
 
 .bottom-spacer {
@@ -340,7 +394,6 @@ function getDisplayText(msg: any): string {
   font-weight: bold;
 }
 
-/* Модальное окно для просмотра изображений */
 .image-viewer {
   position: fixed;
   top: 0;
