@@ -1,6 +1,8 @@
 package com.sentstorm.messenger.core.service.impl;
 
 import com.sentstorm.messenger.api.model.attachment.AttachmentUploadResponse;
+import com.sentstorm.messenger.core.exception.ErrorCode;
+import com.sentstorm.messenger.core.exception.ServiceException;
 import com.sentstorm.messenger.core.service.AttachmentService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,7 +24,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     public AttachmentUploadResponse upload(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("Only images are allowed");
+            throw new ServiceException(ErrorCode.INVALID_ARGUMENT, "Only images are allowed");
         }
 
         try {
@@ -51,7 +53,7 @@ public class AttachmentServiceImpl implements AttachmentService {
                     .build();
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload file", e);
+            throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to upload file");
         }
     }
 }

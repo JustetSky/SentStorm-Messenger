@@ -16,7 +16,7 @@ import com.sentstorm.messenger.core.service.CurrentUserService;
 import com.sentstorm.messenger.core.exception.ErrorCode;
 import com.sentstorm.messenger.core.exception.ServiceException;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -37,25 +37,22 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional
     public ChatDto createPrivateChat(CreateChatRequest request) {
-
         User currentUser = currentUserService.getCurrentUser();
 
         User otherUser = userRepository.findByPublicId(request.getUserPublicId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ServiceException(ErrorCode.NOT_FOUND, "User not found"));
 
         if (currentUser.getId().equals(otherUser.getId())) {
-            throw new IllegalArgumentException("Cannot create chat with yourself");
+            throw new ServiceException(ErrorCode.INVALID_ARGUMENT, "Cannot create chat with yourself");
         }
 
         return chatRepository.findPrivateChat(currentUser.getId(), otherUser.getId())
-                .map(chat -> ChatDto.builder()
-                        .id(chat.getId())
-                        .build()
-                )
+                .map(chat -> ChatDto.builder().id(chat.getId()).build())
                 .orElseGet(() -> createNewChat(currentUser, otherUser));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ChatListItemDto> getUserChats() {
         User currentUser = currentUserService.getCurrentUser();
 
@@ -85,6 +82,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ChatDto getChat(UUID chatId) {
         User currentUser = currentUserService.getCurrentUser();
 

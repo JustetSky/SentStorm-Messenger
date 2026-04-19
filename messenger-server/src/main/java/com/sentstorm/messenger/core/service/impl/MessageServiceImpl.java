@@ -41,6 +41,7 @@ public class MessageServiceImpl implements MessageService {
     private final MessagePublisher messagePublisher;
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<MessageDto> getChatMessages(UUID chatId, Pageable pageable) {
 
         User currentUser = currentUserService.getCurrentUser();
@@ -70,6 +71,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    @Transactional
     public MessageDto sendMessage(MessageSendRequest request) {
         User currentUser = currentUserService.getCurrentUser();
 

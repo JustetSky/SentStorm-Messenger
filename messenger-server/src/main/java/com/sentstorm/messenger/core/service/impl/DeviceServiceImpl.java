@@ -14,6 +14,7 @@ import com.sentstorm.messenger.core.service.CurrentUserService;
 import com.sentstorm.messenger.core.service.DeviceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -29,6 +30,7 @@ public class DeviceServiceImpl implements DeviceService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public DeviceDto register(DeviceRegisterRequest request) {
 
         User currentUser = currentUserService.getCurrentUser();
@@ -57,6 +59,7 @@ public class DeviceServiceImpl implements DeviceService {
     }
 
     @Override
+    @Transactional
     public void delete(UUID deviceId) {
 
         User currentUser = currentUserService.getCurrentUser();
@@ -78,6 +81,7 @@ public class DeviceServiceImpl implements DeviceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserDevicePublicDto> getUserDevices(String publicId) {
 
         User user = userRepository.findByPublicId(publicId)
@@ -93,5 +97,4 @@ public class DeviceServiceImpl implements DeviceService {
                 .map(deviceMapper::toPublicDto)
                 .toList();
     }
-    
 }
