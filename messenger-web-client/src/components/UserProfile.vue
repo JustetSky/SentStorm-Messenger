@@ -32,15 +32,32 @@ function formatLastSeen(lastSeen: string | undefined): string {
 
   const date = new Date(lastSeen)
   const now = new Date()
-  const diffSeconds = (now.getTime() - date.getTime()) / 1000
 
+  // Для своего профиля всегда Online
   if (!props.user) return 'Online'
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const messageDateTime = messageDate.getTime()
+
+  const diffSeconds = (now.getTime() - date.getTime()) / 1000
+  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   if (diffSeconds < 60) return 'Online'
   if (diffSeconds < 3600) return `Last seen ${Math.floor(diffSeconds / 60)} min ago`
-  if (diffSeconds < 86400) return `Last seen today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-  if (diffSeconds < 172800) return `Last seen yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-  return `Last seen ${date.toLocaleDateString()}`
+
+  if (messageDateTime === today.getTime()) {
+    return `Last seen today at ${timeStr}`
+  }
+
+  if (messageDateTime === yesterday.getTime()) {
+    return `Last seen yesterday at ${timeStr}`
+  }
+
+  return `Last seen ${date.toLocaleDateString()} at ${timeStr}`
 }
 </script>
 

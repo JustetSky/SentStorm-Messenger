@@ -49,15 +49,38 @@ const isPartnerOnline = computed(() => {
 
 function formatLastSeen(lastSeen: string | undefined): string {
   if (!lastSeen) return ''
+
   const date = new Date(lastSeen)
   const now = new Date()
-  const diffSeconds = (now.getTime() - date.getTime()) / 1000
 
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const messageDateTime = messageDate.getTime()
+
+  const diffSeconds = (now.getTime() - date.getTime()) / 1000
+  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+  // Онлайн (меньше минуты)
   if (diffSeconds < 60) return 'Online'
+
+  // Меньше часа
   if (diffSeconds < 3600) return `Last seen ${Math.floor(diffSeconds / 60)} min ago`
-  if (diffSeconds < 86400) return `Last seen today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-  if (diffSeconds < 172800) return `Last seen yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-  return `Last seen ${date.toLocaleDateString()}`
+
+  // Сегодня (та же дата)
+  if (messageDateTime === today.getTime()) {
+    return `Last seen today at ${timeStr}`
+  }
+
+  // Вчера
+  if (messageDateTime === yesterday.getTime()) {
+    return `Last seen yesterday at ${timeStr}`
+  }
+
+  // Старше — показываем полную дату
+  return `Last seen ${date.toLocaleDateString()} at ${timeStr}`
 }
 
 async function refreshPartnerStatus() {
@@ -649,6 +672,7 @@ watch(
   background: #f1f3f6;
   padding: 0 16px;
   outline: none;
+  min-width: 0;
 }
 
 .attach-btn {
@@ -664,6 +688,7 @@ watch(
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 
 .attach-btn:hover {
@@ -683,6 +708,7 @@ watch(
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 
 .emoji-btn:hover {
@@ -697,6 +723,7 @@ watch(
   background: #3a76f0;
   color: white;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .send-btn:disabled {
@@ -717,6 +744,9 @@ watch(
   align-items: center;
   gap: 12px;
   z-index: 10;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
 }
 
 .image-preview img {
@@ -724,15 +754,24 @@ watch(
   height: 60px;
   border-radius: 8px;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .image-preview-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
   font-size: 13px;
   color: #111827;
+  overflow: hidden;
+}
+
+.image-preview-info span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .image-preview-info span:last-child {
@@ -749,6 +788,10 @@ watch(
   color: #6b7280;
   font-size: 18px;
   cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cancel-image-btn:hover {
@@ -764,6 +807,8 @@ watch(
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .send-image-btn:hover {
@@ -802,5 +847,53 @@ watch(
   font-size: 64px;
   margin-bottom: 16px;
   opacity: 0.5;
+}
+
+@media (max-width: 600px) {
+  .image-preview {
+    flex-wrap: wrap;
+    padding: 10px;
+  }
+
+  .image-preview-info {
+    flex-basis: 100%;
+    order: 2;
+  }
+
+  .send-image-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .input {
+    gap: 4px;
+  }
+
+  .input input {
+    padding: 0 12px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  .header {
+    padding: 0 12px;
+  }
+
+  .header-title {
+    font-size: 14px;
+  }
+
+  .input input {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .attach-btn,
+  .emoji-btn,
+  .send-btn {
+    width: 38px;
+    height: 38px;
+  }
 }
 </style>
