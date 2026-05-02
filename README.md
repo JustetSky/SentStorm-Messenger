@@ -1,84 +1,86 @@
-# SentStorm — Приватный мессенджер с end-to-end шифрованием
+# SentStorm — End-to-End Encrypted Messenger
 
-## Обзор приложения
-SentStorm — это приватный мессенджер со сквозным (end-to-end) шифрованием сообщений, при котором содержимое переписки доступно только участникам диалога и недоступно серверной стороне приложения.
+English | [Русский](./README-ru.md)
 
----
-
-## Основные возможности
-- Регистрация и аутентификация пользователей через Keycloak;
-- Поиск пользователей и создание личных чатов;
-- Обмен текстовыми сообщениями и эмодзи;
-- Отправка изображений без сохранения метаданных
-- Доставка сообщений в реальном времени через WebSocket;
-- Хранение истории переписки;
-- Сквозное (end-to-end) шифрование сообщений на стороне клиента.
+## Overview
+SentStorm is a private messenger with end-to-end (E2E) encryption, where message content is accessible only to conversation participants and remains unreadable by the server.
 
 ---
 
-## Интерфейс приложения
+## Key Features
+- User registration and authentication via Keycloak
+- Search for users and create private chats
+- Exchange text messages and emoji
+- Send images without storing metadata
+- Real-time message delivery via WebSocket
+- Chat history retention
+- Client-side end-to-end encryption
 
-### Главный экран (список чатов)
+---
+
+## Interface
+
+### Main Screen (Chat List)
 <div style="text-align: center;">
   <img 
     src="docs/main_page.png" 
-    alt="Главный экран со списком чатов"
+    alt="Main screen with chat list"
     style="max-width: 600px; width: 100%; height: auto;"
   >
 </div>
 
-### Окно чата
+### Chat Window
 <div style="text-align: center;">
   <img 
     src="docs/chat.png" 
-    alt="Окно чата с перепиской"
+    alt="Chat window with messages"
     style="max-width: 600px; width: 100%; height: auto;"
   >
 </div>
 
-### Меню пользователя
+### User Menu
 <div style="text-align: center;">
   <img 
     src="docs/user_menu.png" 
-    alt="Выпадающее меню пользователя"
+    alt="User dropdown menu"
     style="max-width: 600px; width: 100%; height: auto;"
   >
 </div>
 
-### Профиль пользователя
+### User Profile
 <div style="text-align: center;">
   <img 
     src="docs/user_profile.png" 
-    alt="Окно профиля пользователя"
+    alt="User profile window"
     style="max-width: 600px; width: 100%; height: auto;"
   >
 </div>
 
-### Профиль собеседника
+### Contact Profile
 <div style="text-align: center;">
   <img 
     src="docs/chat_participant_profile.png" 
-    alt="Окно профиля собеседника"
+    alt="Contact profile window"
     style="max-width: 600px; width: 100%; height: auto;"
   >
 </div>
 
-### Меню поиска
+### User Search
 <div style="text-align: center;">
   <img 
     src="docs/user_search.png" 
-    alt="Окно поиска пользователей"
+    alt="User search window"
     style="max-width: 600px; width: 100%; height: auto;"
   >
 </div>
 
 ---
 
-## Архитектура системы
+## Architecture
 
 ```
              ┌────────────────┐                       ┌────────────────┐
-             │  Пользователь  │                       │  Пользователь  │
+             │     User       │                       │      User      │
              └───────┬────────┘                       └───────┬────────┘
                      │                                        │
                      └──────────────────┬─────────────────────┘
@@ -122,50 +124,51 @@ SentStorm — это приватный мессенджер со сквозны
 
 ---
 
-## Технологический стек
+## Technology Stack
 
 ### Backend
-- **Java 21**: Наиболее стабильная LTS-версия Java;
-- **Spring Boot 4**: Основной фреймворк серверной части, упрощающий разработку REST- и WebSocket-приложений;
-- **Spring Web**: Реализация REST API для взаимодействия клиента и сервера;
-- **Spring WebSocket (STOMP)**: Доставка сообщений и событий в реальном времени;
-- **Spring Data JPA**: ORM-слой для работы с базой данных и управления сущностями;
-- **Spring Security + OAuth2 Resource Server**: Проверка JWT-токенов Keycloak и защита API;
-- **PostgreSQL**: Реляционная база данных для хранения пользователей, чатов и зашифрованных сообщений;
-- **Flyway**: Версионирование и миграции схемы базы данных;
-- **Lombok**: Уменьшение шаблонного кода за счёт автоматической генерации геттеров, сеттеров и конструкторов.
+- **Java 21**: Latest stable LTS release
+- **Spring Boot 4**: Core framework for building REST and WebSocket applications
+- **Spring Web**: REST API implementation for client-server communication
+- **Spring WebSocket (STOMP)**: Real-time message and event delivery
+- **Spring Data JPA**: ORM layer for database operations and entity management
+- **Spring Security + OAuth2 Resource Server**: Keycloak JWT validation and API protection
+- **PostgreSQL**: Relational database for users, chats, and encrypted messages
+- **Flyway**: Database schema versioning and migrations
+- **Lombok**: Boilerplate reduction through automatic code generation
 
 ### Frontend
-- **Vue.js**: Фреймворк для создания одностраничного веб-клиента мессенджера;
-- **TypeScript**: Типизированный язык разработки клиентской логики;
-- **TweetNaCl**: Криптографические операции на клиенте (генерация ключей, E2E-шифрование);
-- **WebSocket (STOMP)**: Получение сообщений и событий в реальном времени.
+- **Vue.js**: Framework for building the single-page messenger client
+- **TypeScript**: Typed language for client-side logic
+- **TweetNaCl**: Client-side cryptographic operations (key generation, E2E encryption)
+- **WebSocket (STOMP)**: Real-time message and event reception
 
-### Аутентификация
-- **Keycloak**: Сервер идентификации и управления пользователями;
-- **OAuth2 / OpenID Connect**: Протоколы аутентификации и авторизации;
-- **JWT**: Токены доступа, используемые клиентом при обращении к API и WebSocket.
+### Authentication
+- **Keycloak**: Identity and access management server
+- **OAuth2 / OpenID Connect**: Authentication and authorization protocols
+- **JWT**: Access tokens used by the client for API and WebSocket requests
 
-### Инфраструктура
-- **Gradle**: Система сборки и управления зависимостями проекта;
-- **Docker**: Контейнеризация компонентов системы (сервер, БД, Keycloak);
-- **Docker Compose**: Оркестрация и совместный запуск всех сервисов среды разработки;
-- **PostgreSQL (containerized)**: Развёртывание базы данных в изолированном контейнере;
-- **Keycloak (containerized)**: Развёртывание сервера аутентификации в контейнере.
+### Infrastructure
+- **Gradle**: Build system and dependency management
+- **Docker**: Containerization of system components (app, DB, Keycloak)
+- **Docker Compose**: Orchestration for running all services in development
+- **PostgreSQL (containerized)**: Database deployment in an isolated container
+- **Keycloak (containerized)**: Auth server deployment in a container
 
 ---
-## Модель данных
 
-### ERD-диаграмма базы данных
+## Data Model
+
+### ERD Diagram
 <div style="text-align: center;">
   <img 
     src="docs/erd-diagram.png" 
-    alt="ERD-диаграмма"
+    alt="ERD Diagram"
     style="max-width: 700px; width: 100%; height: auto;"
   >
 </div>
 
-### Основные сущности проекта
+### Core Entities
 
 #### Chat
 ```java
@@ -216,156 +219,158 @@ public class User {
 #### UserDevice
 ```java
 public class UserDevice {
-   private UUID id;
-   private User user;
-   private String deviceId;
-   private String publicKey;
-   private Instant createdDate;
-   private Instant lastActive;
-   private String pushToken;
-   private Boolean isActive;
+    private UUID id;
+    private User user;
+    private String deviceId;
+    private String publicKey;
+    private Instant createdDate;
+    private Instant lastActive;
+    private Boolean isActive;
 }
 ```
 
 ---
 
-## API Эндпоинты
+## API Endpoints
 
 ### Users
 ```
-GET /users/me              # Получить профиль текущего авторизованного пользователя
-GET /users/{publicId}      # Получить публичную информацию о пользователе
-GET /users/search          # Поиск пользователей по publicId для начала нового диалога
+GET /users/me              # Get current authenticated user profile
+GET /users/{publicId}      # Get public information about a user
+GET /users/search          # Search users by publicId to start a new chat
 ```
 
 ### Chats
 ```
-GET    /chats                 # Получить список чатов текущего пользователя
-POST   /chats                 # Создать новый личный чат с пользователем
-GET    /chats/{chatId}        # Получить информацию о конкретном чате
-DELETE /chats/{chatId}        # Удаление чата
+GET    /chats              # Get current user's chat list
+POST   /chats              # Create a new private chat with a user
+GET    /chats/{chatId}     # Get chat details
+DELETE /chats/{chatId}     # Delete a chat
 ```
 
 ### Messages
 ```
-POST   /messages                          # Отправить зашифрованное сообщение в чат
-GET    /chats/{chatId}/messages           # Получить историю сообщений выбранного чата
-PATCH  /messages/{messageId}/read         # Отметить сообщение как прочитанное (две синие галочки)
-PATCH  /messages/{messageId}/delivered    # Отметить сообщение как доставленное (две серые галочки)
-DELETE /messages/{messageId}              # Удаление сообщения
+POST   /messages                          # Send an encrypted message to a chat
+GET    /chats/{chatId}/messages           # Get message history for a chat
+PATCH  /messages/{messageId}/read         # Mark message as read (double blue check)
+PATCH  /messages/{messageId}/delivered    # Mark message as delivered (double gray check)
+DELETE /messages/{messageId}              # Delete a message
 ```
 
 ### Attachment
 ```
-POST /messages/upload      # Загрузить изображение для отправки в сообщении
+POST /messages/upload      # Upload an image to attach to a message
 ```
 
 ### Device
 ```
-POST   /devices              # Зарегистрировать устройство пользователя и его публичный ключ
-DELETE /devices/{deviceId}   # Удалить устройство пользователя из системы
+POST   /devices              # Register a user device and its public key
+DELETE /devices/{deviceId}   # Remove a user device from the system
 ```
 
 ### Crypto
 ```
-GET /users/{publicId}/devices   # Получить список устройств пользователя и их публичные ключи для E2E шифрования
+GET /users/{publicId}/devices   # Get a user's device list and public keys for E2E encryption
 ```
 
 ---
 
-## Модель безопасности
+## Security Model
 
-### Аутентификация
-Аутентификация пользователей выполняется через Keycloak.
-Все защищённые эндпоинты требуют JWT-токен в заголовке:
+### Authentication
+User authentication is handled by Keycloak. 
+All protected endpoints require a JWT token in the header:
 ```
 Authorization: Bearer <token>
 ```
 
-Токен используется для:
-- идентификации пользователя;
-- проверки доступа к API;
-- синхронизации пользователя между Keycloak и базой данных приложения.
+The token is used for:
+- User identification
+- API access control
+- Synchronizing users between Keycloak and the application database
 
-### E2E шифрование
-В SentStorm реализовано сквозное (end-to-end) шифрование.
+### E2E Encryption
+SentStorm implements end-to-end encryption with the following principles:
 
-Ключевые принципы:
+- Cryptographic keys are generated on the client
+- Private keys are never transmitted to the server
+- Messages are encrypted on the sender's device
+- Decryption occurs only on the recipient's device
+- The server stores only encrypted data
 
-- криптографические ключи генерируются на клиенте;
-- приватные ключи никогда не передаются на сервер;
-- сообщения шифруются на устройстве отправителя;
-- расшифровка происходит только на устройстве получателя;
-- сервер хранит только зашифрованные данные.
-
-Сервер не имеет технической возможности прочитать содержимое переписки пользователей.
-
-Передача данных между клиентом и сервером дополнительно защищена TLS.
+The server has no technical capability to read user conversation content. 
+Data transmission between client and server is additionally protected by TLS.
 
 ---
 
-## Сборка и запуск
+## Build & Run
 
-### Запуск серверной части
+### Running the Server
 
-- Запуск всех контейнеров (БД + приложение)
+Start all containers (DB + application):
 ```
 docker-compose up -d postgres
 ```
-- Сборка проекта
+
+Build the project:
 ```
 ./gradlew clean build
 ```
-- Запуск приложения
+
+Run the application:
 ```
 ./gradlew bootRun
 ```
 
-### Запуск клиента
-- Установка зависимостей
+### Running the Client
+
+Install dependencies:
 ```
 npm install
 ```
-- Сборка проекта
+
+Build the project:
 ```
 npm run build
 ```
-- Предпросмотр собранного проекта
+
+Preview the built project:
 ```
 npm run preview
 ```
 
-### Порты по умолчанию
+### Default Ports
 
-- Frontend (Vue.js) http://localhost:4200
-- Backend (Spring Boot) https://localhost:8443
-- Keycloak	http://localhost:9090
-- PostgreSQL localhost:5432
-
----
-
-## Потоки взаимодействия
-
-### Отправка сообщения
-1. Клиент получает публичный ключ получателя;
-2. Сообщение шифруется на клиенте;
-3. Зашифрованное сообщение отправляется на сервер через REST;
-4. Сервер сохраняет ciphertext в базе данных (SENT);
-5. Сервер доставляет сообщение получателю;
-6. При успешной доставке сервер обновляет статус сообщения (DELIVERED);
-7. Клиент получателя расшифровывает сообщение локально.
-
-### Получение сообщения
-1. Если пользователь онлайн, сообщение поступает через WebSocket в режиме реального времени;
-2. Если пользователь был офлайн, клиент запрашивает сообщения после подключения;
-3. Сервер возвращает зашифрованные данные;
-4. Клиент расшифровывает их локально;
-5. При открытии чата клиент отправляет подтверждение прочтения, сервер обновляет статус сообщения (READ).
+| Service | URL |
+|---------|-----|
+| Frontend (Vue.js) | `http://localhost:4200` |
+| Backend (Spring Boot) | `https://localhost:8443` |
+| Keycloak | `http://localhost:9090` |
+| PostgreSQL | `localhost:5432` |
 
 ---
 
-## Лицензия
-Проект распространяется под лицензией Apache License 2.0.
+## Interaction Flows
 
-Полный текст лицензии доступен в файле [LICENSE](LICENSE)
-или по ссылке: http://www.apache.org/licenses/LICENSE-2.0
+### Sending a Message
+1. Client retrieves the recipient's public key
+2. Message is encrypted on the client
+3. Encrypted message is sent to the server via REST
+4. Server stores the ciphertext in the database (SENT)
+5. Server delivers the message to the recipient
+6. On successful delivery, the server updates the message status (DELIVERED)
+7. Recipient's client decrypts the message locally
+
+### Receiving a Message
+1. If the user is online, the message arrives via WebSocket in real time
+2. If the user was offline, the client requests messages after reconnecting
+3. Server returns encrypted data
+4. Client decrypts it locally
+5. When the chat is opened, the client sends a read receipt, and the server updates the message status (READ)
+
+---
+
+## License
+This project is licensed under the Apache License 2.0.
+
+See the [LICENSE](LICENSE) file for details or visit: http://www.apache.org/licenses/LICENSE-2.0
