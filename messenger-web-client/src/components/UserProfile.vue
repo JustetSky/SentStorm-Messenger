@@ -14,6 +14,9 @@ const emit = defineEmits<{
 
 const userStore = useUserStore()
 
+// Определяем, свой профиль или чужой
+const isOwnProfile = computed(() => !props.user)
+
 const isOnline = computed(() => {
   const targetUser = props.user || userStore.profile
   if (!targetUser?.lastSeen) return false
@@ -34,7 +37,7 @@ function formatLastSeen(lastSeen: string | undefined): string {
   const now = new Date()
 
   // Для своего профиля всегда Online
-  if (!props.user) return 'Online'
+  if (isOwnProfile.value) return 'Online'
 
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const yesterday = new Date(today)
@@ -65,7 +68,7 @@ function formatLastSeen(lastSeen: string | undefined): string {
   <div v-if="show" class="profile-modal" @click="close">
     <div class="profile-content" @click.stop>
       <div class="profile-header">
-        <h3>{{ user ? 'Profile' : 'My Profile' }}</h3>
+        <h3>{{ isOwnProfile ? 'My Profile' : 'Profile' }}</h3>
         <button class="close-btn" @click="close">×</button>
       </div>
 
@@ -84,9 +87,10 @@ function formatLastSeen(lastSeen: string | undefined): string {
           <div class="field-value">@{{ (user || userStore.profile)?.publicId }}</div>
         </div>
 
-        <div class="profile-field">
+        <!-- Email — только для своего профиля -->
+        <div v-if="isOwnProfile" class="profile-field">
           <label>Email</label>
-          <div class="field-value">{{ (user || userStore.profile)?.email }}</div>
+          <div class="field-value">{{ userStore.profile?.email }}</div>
         </div>
 
         <div class="profile-field">
