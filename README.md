@@ -159,11 +159,11 @@ SentStorm is a private messenger with end-to-end (E2E) encryption, where message
 
 ## Data Model
 
-### ERD Diagram
+### Entity–relationship model
 <div style="text-align: center;">
   <img 
-    src="docs/erd-diagram.png" 
-    alt="ERD Diagram"
+    src="docs/er-diagram.png" 
+    alt="ER-diagram"
     style="max-width: 700px; width: 100%; height: auto;"
   >
 </div>

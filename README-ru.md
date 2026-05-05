@@ -158,11 +158,11 @@ SentStorm — это приватный мессенджер со сквозны
 ---
 ## Модель данных
 
-### ERD-диаграмма базы данных
+### ER-диаграмма базы данных
 <div style="text-align: center;">
   <img 
-    src="docs/erd-diagram.png" 
-    alt="ERD-диаграмма"
+    src="docs/er-diagram.png" 
+    alt="ER-диаграмма"
     style="max-width: 700px; width: 100%; height: auto;"
   >
 </div>
