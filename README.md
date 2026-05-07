@@ -235,9 +235,10 @@ public class UserDevice {
 
 ### Users
 ```
-GET /users/me              # Get current authenticated user profile
-GET /users/{publicId}      # Get public information about a user
-GET /users/search          # Search users by publicId to start a new chat
+GET /users/me                    # Get current authenticated user profile
+GET /users/{publicId}            # Get public information about a user
+GET /users/search                # Search users by publicId to start a new chat
+GET /users/{publicId}/devices    # Get a user's device list and public keys for E2E encryption
 ```
 
 ### Chats
@@ -266,11 +267,6 @@ POST /messages/upload      # Upload an image to attach to a message
 ```
 POST   /devices              # Register a user device and its public key
 DELETE /devices/{deviceId}   # Remove a user device from the system
-```
-
-### Crypto
-```
-GET /users/{publicId}/devices   # Get a user's device list and public keys for E2E encryption
 ```
 
 ---
