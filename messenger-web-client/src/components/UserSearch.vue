@@ -49,8 +49,9 @@ async function startChat(user: User) {
 
   try {
     const chat = await chatStore.createOrGetChat(user.publicId)
-    chatStore.setChatPartner(chat.chatId, user)
-    chatStore.setActiveChat(chat.chatId)
+    if (chat && chat.chatId) {
+      chatStore.setActiveChat(chat.chatId)
+    }
 
     searchQuery.value = ''
     searchResults.value = []

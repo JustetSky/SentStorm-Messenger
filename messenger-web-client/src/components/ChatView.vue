@@ -63,23 +63,17 @@ function formatLastSeen(lastSeen: string | undefined): string {
   const diffSeconds = (now.getTime() - date.getTime()) / 1000
   const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-  // Онлайн (меньше минуты)
   if (diffSeconds < 60) return 'Online'
-
-  // Меньше часа
   if (diffSeconds < 3600) return `Last seen ${Math.floor(diffSeconds / 60)} min ago`
 
-  // Сегодня (та же дата)
   if (messageDateTime === today.getTime()) {
     return `Last seen today at ${timeStr}`
   }
 
-  // Вчера
   if (messageDateTime === yesterday.getTime()) {
     return `Last seen yesterday at ${timeStr}`
   }
 
-  // Старше — показываем полную дату
   return `Last seen ${date.toLocaleDateString()} at ${timeStr}`
 }
 
@@ -407,15 +401,21 @@ onUnmounted(() => {
 watch(
   () => chatStore.activeChatId,
   async (chatId, oldChatId) => {
-    if (!chatId) return
+    // Если чат закрыли — очищаем и выходим
+    if (!chatId) {
+      messageStore.clear()
+      return
+    }
 
     if (oldChatId) {
       webSocketService.unsubscribeFromChat(oldChatId)
     }
 
+    // Очищаем ПЕРЕД загрузкой нового чата
     messageStore.clear()
     currentPage.value = 0
     hasMoreMessages.value = true
+
     await messageStore.fetchMessages(chatId)
     await refreshPartnerStatus()
 

@@ -96,7 +96,7 @@ export const useChatStore = defineStore('chat', {
 
       const res = await api.get('/chats')
 
-      const chats: Chat[] = await Promise.all(res.data.map(async (chat: any) => {
+      this.chats = await Promise.all(res.data.map(async (chat: any) => {
         const other = chat.otherParticipant
 
         let decryptedLastMessage: string | null = null
@@ -140,7 +140,6 @@ export const useChatStore = defineStore('chat', {
         }
       }))
 
-      this.chats = chats
       this.savePartners()
     },
 
@@ -148,8 +147,9 @@ export const useChatStore = defineStore('chat', {
       const userStore = useUserStore()
       const user = await userStore.fetchUser(publicId)
 
+      // Проверяем, есть ли уже чат с этим пользователем в списке
       const existingChat = this.chats.find(c =>
-        c.partnerId === user.id || c.partnerPublicId === user.publicId
+        c.partnerPublicId === user.publicId
       )
 
       if (existingChat) {
@@ -164,15 +164,30 @@ export const useChatStore = defineStore('chat', {
         return existingChat
       }
 
+      // Создаём новый чат
       try {
         const res = await api.post('/chats', { userPublicId: publicId })
         const newChat = res.data
         const chatId = newChat.chatId || newChat.id
 
-        if (!chatId) {
-          throw new Error('Failed to create chat: no chatId returned')
+        // Проверяем, не вернул ли сервер существующий чат (которого нет в нашем списке)
+        const alreadyExists = this.chats.find(c => c.chatId === chatId)
+        if (alreadyExists) {
+          // Обновляем данные существующего чата
+          this.chatPartners.set(chatId, {
+            id: user.id,
+            publicId: user.publicId,
+            firstName: user.firstName,
+            lastName: user.lastName
+          })
+          this.savePartners()
+          alreadyExists.title = `${user.firstName} ${user.lastName}`
+          alreadyExists.partnerId = user.id
+          alreadyExists.partnerPublicId = user.publicId
+          return alreadyExists
         }
 
+        // Добавляем новый чат
         this.chatPartners.set(chatId, {
           id: user.id,
           publicId: user.publicId,
