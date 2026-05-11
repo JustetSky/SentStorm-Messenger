@@ -59,7 +59,7 @@ SentStorm is a private messenger with end-to-end (E2E) encryption, where message
 ### Contact Profile
 <div style="text-align: center;">
   <img 
-    src="docs/chat_participant_profile.png" 
+    src="docs/contact_profile.png" 
     alt="Contact profile window"
     style="max-width: 600px; width: 100%; height: auto;"
   >
@@ -69,7 +69,16 @@ SentStorm is a private messenger with end-to-end (E2E) encryption, where message
 <div style="text-align: center;">
   <img 
     src="docs/user_search.png" 
-    alt="User search window"
+    alt="User search result"
+    style="max-width: 600px; width: 100%; height: auto;"
+  >
+</div>
+
+### Self Search
+<div style="text-align: center;">
+  <img 
+    src="docs/self_search.png" 
+    alt="Self search result"
     style="max-width: 600px; width: 100%; height: auto;"
   >
 </div>

@@ -59,7 +59,7 @@ SentStorm — это приватный мессенджер со сквозны
 ### Профиль собеседника
 <div style="text-align: center;">
   <img 
-    src="docs/chat_participant_profile.png" 
+    src="docs/contact_profile.png" 
     alt="Окно профиля собеседника"
     style="max-width: 600px; width: 100%; height: auto;"
   >
@@ -69,7 +69,16 @@ SentStorm — это приватный мессенджер со сквозны
 <div style="text-align: center;">
   <img 
     src="docs/user_search.png" 
-    alt="Окно поиска пользователей"
+    alt="Результат поиска пользователей"
+    style="max-width: 600px; width: 100%; height: auto;"
+  >
+</div>
+
+### Меню при поиске себя
+<div style="text-align: center;">
+  <img 
+    src="docs/self_search.png" 
+    alt="Результат поиска себя"
     style="max-width: 600px; width: 100%; height: auto;"
   >
 </div>
