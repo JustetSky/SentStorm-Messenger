@@ -1,6 +1,7 @@
-# IntelliJ IDEA
+# JetBrains IDEs: IntelliJ, WebStorm, etc
 .idea/
 *.iml
+*.iws
 out/
 
 # VS Code
